@@ -1,4 +1,4 @@
-# own_os
+# Ferrum
 
 A bare-metal x86_64 kernel written in Rust, built from scratch without any OS abstractions.
 
@@ -25,7 +25,7 @@ brew install qemu  # macOS
 cargo build
 ```
 
-The default target is `x86_64-own_os.json` (bare-metal, no OS, no SSE, redzone disabled).
+The default target is `x86_64-ferrum.json` (bare-metal, no OS, no SSE, redzone disabled).
 `core` and `compiler_builtins` are compiled from source via `build-std`.
 
 ## Run

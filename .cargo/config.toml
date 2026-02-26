@@ -16,4 +16,4 @@ build-std-features = ["compiler-builtins-mem"]
 json-target-spec = true
 
 [build]
-target = "x86_64-own_os.json"
+target = "x86_64-ferrum.json"

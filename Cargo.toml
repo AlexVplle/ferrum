@@ -1,5 +1,5 @@
 [package]
-name = "own_os"
+name = "ferrum"
 version = "0.1.0"
 edition = "2024"
 
@@ -7,6 +7,6 @@ edition = "2024"
 bootloader = "0.9"
 
 [[bin]]
-name = "own_os"
+name = "ferrum"
 test = false
 bench = false
