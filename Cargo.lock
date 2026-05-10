@@ -3,14 +3,17 @@
 version = 4
 
 [[package]]
-name = "bootloader"
-version = "0.9.34"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13f6a8a495d2f93fe3d6eb3a224f9aa749a63cfd746ed03eb5ddcbd00ade7d8f"
-
-[[package]]
 name = "ferrum"
 version = "0.1.0"
 dependencies = [
- "bootloader",
+ "sbi",
 ]
+
+[[package]]
+name = "sbi"
+version = "0.1.0"
+source = "git+https://github.com/AlexVplle/sbi.git#8d266498b98fa0f96dd962d7a5afccf9e9dc26ea"
+
+[[package]]
+name = "xtask"
+version = "0.1.0"
