@@ -1,0 +1,12 @@
+[package]
+name = "ferrum"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+sbi = { git = "https://github.com/AlexVplle/sbi.git" }
+
+[[bin]]
+name = "ferrum"
+test = false
+bench = false
