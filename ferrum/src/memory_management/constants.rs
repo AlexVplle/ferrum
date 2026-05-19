@@ -1,0 +1,6 @@
+pub const PAGE_SIZE: u64 = 4096;
+
+pub use crate::arch::{MAX_PHYSMEM_BITS, SECTION_SIZE_BITS};
+pub const SECTION_SIZE: u64 = 1 << SECTION_SIZE_BITS;
+pub const PAGES_PER_SECTION: u64 = SECTION_SIZE / PAGE_SIZE;
+pub const MAX_SECTIONS: usize = 1 << (MAX_PHYSMEM_BITS - SECTION_SIZE_BITS);
