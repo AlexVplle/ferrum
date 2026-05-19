@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-sbi = { git = "https://github.com/AlexVplle/sbi.git" }
+sbi = { path = "../../sbi" }
+ferrum-macros = { path = "../ferrum-macros" }
+fdt = "0.1.5"
 
 [[bin]]
 name = "ferrum"

@@ -1,3 +1,3 @@
 [workspace]
-members = ["ferrum", "xtask"]
+members = ["ferrum", "ferrum-macros", "xtask"]
 resolver = "2"

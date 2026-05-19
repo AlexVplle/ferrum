@@ -8,6 +8,10 @@ Inspired by:
 - [xv6](https://github.com/mit-pdos/xv6-riscv) by MIT
 - [OSDev Wiki](https://wiki.osdev.org/)
 
+## Goal
+
+Run Doom.
+
 ## Requirements
 
 - [Rust nightly](https://rustup.rs/)

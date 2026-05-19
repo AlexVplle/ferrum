@@ -1,2 +1,2 @@
-[build]
+[cargo]
 target = "riscv64gc-unknown-none-elf"
