@@ -6,9 +6,10 @@ fn main() {
         Some("build") => build(),
         Some("run") => {
             let runner: std::path::PathBuf = parse_arg(&args, "--runner");
-            run(&runner);
+            let memory: Option<String> = parse_optional_str_arg(&args, "--memory");
+            run(&runner, memory.as_deref());
         }
-        _ => eprintln!("Usage: cargo xtask [build|run --runner <path>]"),
+        _ => eprintln!("Usage: cargo xtask [build|run --runner <path> [--memory <size>]]"),
     }
 }
 
@@ -16,6 +17,11 @@ fn parse_arg(args: &[String], flag: &str) -> std::path::PathBuf {
     let pos: usize = args.iter().position(|a| a == flag)
         .unwrap_or_else(|| panic!("missing {flag} <path>"));
     std::path::PathBuf::from(args.get(pos + 1).unwrap_or_else(|| panic!("missing value for {flag}")))
+}
+
+fn parse_optional_str_arg(args: &[String], flag: &str) -> Option<String> {
+    let pos: usize = args.iter().position(|a| a == flag)?;
+    Some(args.get(pos + 1).unwrap_or_else(|| panic!("missing value for {flag}")).clone())
 }
 
 fn build() {
@@ -48,14 +54,21 @@ fn build() {
     }
 }
 
-fn run(runner: &std::path::Path) {
+fn run(runner: &std::path::Path, memory: Option<&str>) {
     build();
 
     let kernel: std::path::PathBuf = workspace_root()
         .join("target/riscv64-ferrum/release/ferrum");
 
+    let mut cmd_args: Vec<&str> = vec!["xtask", "run", "--kernel", kernel.to_str().unwrap()];
+    let memory_owned: String;
+    if let Some(m) = memory {
+        memory_owned = m.to_string();
+        cmd_args.extend_from_slice(&["--memory", &memory_owned]);
+    }
+
     let status: std::process::ExitStatus = Command::new("cargo")
-        .args(["xtask", "run", "--kernel", kernel.to_str().unwrap()])
+        .args(&cmd_args)
         .current_dir(runner)
         .status()
         .expect("failed to run runner xtask");
