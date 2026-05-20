@@ -5,6 +5,8 @@ pub mod boot;
 pub mod constants;
 pub mod context;
 pub mod csr;
+pub mod plic;
+pub mod timer;
 pub mod trap;
 
 use crate::memory_management::physical_address::PhysicalAddress;
@@ -38,7 +40,8 @@ _start:
 );
 
 #[unsafe(no_mangle)]
-extern "C" fn _riscv_entry(_hartid: u64, fdt_address: u64) -> ! {
+extern "C" fn _riscv_entry(hartid: u64, fdt_address: u64) -> ! {
+    boot::store_hart_id(hartid);
     boot::store_fdt_address(fdt_address);
     crate::kernel_main();
 }
