@@ -9,13 +9,14 @@ use trap::Trap;
 core::arch::global_asm!(
     r#"
     .section .text
+    .attribute arch, "rv64imafdc"
     .global _trap_entry
     .align 4
 _trap_entry:
-    addi sp, sp, -(36*8)
+    addi sp, sp, -(69*8)
 
     sd x1,  1*8(sp)
-    addi t0, sp, 36*8
+    addi t0, sp, 69*8
     sd t0,  2*8(sp)
     sd x3,  3*8(sp)
     sd x4,  4*8(sp)
@@ -56,11 +57,81 @@ _trap_entry:
     csrr t0, sstatus
     sd t0, 35*8(sp)
 
+    fsd f0,  36*8(sp)
+    fsd f1,  37*8(sp)
+    fsd f2,  38*8(sp)
+    fsd f3,  39*8(sp)
+    fsd f4,  40*8(sp)
+    fsd f5,  41*8(sp)
+    fsd f6,  42*8(sp)
+    fsd f7,  43*8(sp)
+    fsd f8,  44*8(sp)
+    fsd f9,  45*8(sp)
+    fsd f10, 46*8(sp)
+    fsd f11, 47*8(sp)
+    fsd f12, 48*8(sp)
+    fsd f13, 49*8(sp)
+    fsd f14, 50*8(sp)
+    fsd f15, 51*8(sp)
+    fsd f16, 52*8(sp)
+    fsd f17, 53*8(sp)
+    fsd f18, 54*8(sp)
+    fsd f19, 55*8(sp)
+    fsd f20, 56*8(sp)
+    fsd f21, 57*8(sp)
+    fsd f22, 58*8(sp)
+    fsd f23, 59*8(sp)
+    fsd f24, 60*8(sp)
+    fsd f25, 61*8(sp)
+    fsd f26, 62*8(sp)
+    fsd f27, 63*8(sp)
+    fsd f28, 64*8(sp)
+    fsd f29, 65*8(sp)
+    fsd f30, 66*8(sp)
+    fsd f31, 67*8(sp)
+    csrr t0, fcsr
+    sw t0, 68*8(sp)
+
     mv a0, sp
     call trap_handler
 
     ld t0, 32*8(sp)
     csrw sepc, t0
+
+    lw t0, 68*8(sp)
+    csrw fcsr, t0
+    fld f0,  36*8(sp)
+    fld f1,  37*8(sp)
+    fld f2,  38*8(sp)
+    fld f3,  39*8(sp)
+    fld f4,  40*8(sp)
+    fld f5,  41*8(sp)
+    fld f6,  42*8(sp)
+    fld f7,  43*8(sp)
+    fld f8,  44*8(sp)
+    fld f9,  45*8(sp)
+    fld f10, 46*8(sp)
+    fld f11, 47*8(sp)
+    fld f12, 48*8(sp)
+    fld f13, 49*8(sp)
+    fld f14, 50*8(sp)
+    fld f15, 51*8(sp)
+    fld f16, 52*8(sp)
+    fld f17, 53*8(sp)
+    fld f18, 54*8(sp)
+    fld f19, 55*8(sp)
+    fld f20, 56*8(sp)
+    fld f21, 57*8(sp)
+    fld f22, 58*8(sp)
+    fld f23, 59*8(sp)
+    fld f24, 60*8(sp)
+    fld f25, 61*8(sp)
+    fld f26, 62*8(sp)
+    fld f27, 63*8(sp)
+    fld f28, 64*8(sp)
+    fld f29, 65*8(sp)
+    fld f30, 66*8(sp)
+    fld f31, 67*8(sp)
 
     ld x1,  1*8(sp)
     ld x3,  3*8(sp)

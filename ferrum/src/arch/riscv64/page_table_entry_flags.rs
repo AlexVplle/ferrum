@@ -1,5 +1,6 @@
 use ferrum_macros::flag;
 
+#[derive(Copy, Clone)]
 pub struct PageTableEntryFlags(usize);
 
 impl PageTableEntryFlags {

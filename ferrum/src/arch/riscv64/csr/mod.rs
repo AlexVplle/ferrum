@@ -1,3 +1,6 @@
+pub mod cycle;
+pub mod hpmcounters;
+pub mod instret;
 pub mod satp;
 pub mod scause;
 pub mod sepc;
@@ -6,6 +9,9 @@ pub mod sstatus;
 pub mod stval;
 pub mod time;
 
+pub use cycle::Cycle;
+pub use hpmcounters::*;
+pub use instret::Instret;
 pub use satp::Satp;
 pub use scause::Scause;
 pub use sepc::Sepc;

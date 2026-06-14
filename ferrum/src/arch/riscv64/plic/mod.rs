@@ -16,8 +16,7 @@ static PLATFORM_LEVEL_INTERRUPT_CONTROLLER_BASE: AtomicUsize = AtomicUsize::new(
 pub fn init() {
     let physical_base: usize = boot::platform_level_interrupt_controller_address()
         .expect("PLIC not found in FDT");
-    let virtual_base: VirtualAddress =
-        super::physical_to_virtual(unsafe { PhysicalAddress::new_unchecked(physical_base) });
+    let virtual_base: VirtualAddress = PhysicalAddress::new(physical_base).to_virtual();
     PLATFORM_LEVEL_INTERRUPT_CONTROLLER_BASE.store(virtual_base.as_usize(), Ordering::Release);
     set_threshold(0);
 }
