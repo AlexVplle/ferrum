@@ -5,18 +5,14 @@ fn main() {
     match args.first().map(String::as_str) {
         Some("build") => build(),
         Some("run") => {
-            let runner: std::path::PathBuf = parse_arg(&args, "--runner");
             let memory: Option<String> = parse_optional_str_arg(&args, "--memory");
-            run(&runner, memory.as_deref());
+            let window: bool = args.contains(&"--window".to_string());
+            let gdb: bool = args.contains(&"--gdb".to_string());
+            let numa: bool = args.contains(&"--numa".to_string());
+            run(memory.as_deref(), window, gdb, numa);
         }
-        _ => eprintln!("Usage: cargo xtask [build|run --runner <path> [--memory <size>]]"),
+        _ => eprintln!("Usage: cargo xtask [build|run [--memory <size>] [--window] [--gdb] [--numa]]"),
     }
-}
-
-fn parse_arg(args: &[String], flag: &str) -> std::path::PathBuf {
-    let pos: usize = args.iter().position(|a| a == flag)
-        .unwrap_or_else(|| panic!("missing {flag} <path>"));
-    std::path::PathBuf::from(args.get(pos + 1).unwrap_or_else(|| panic!("missing value for {flag}")))
 }
 
 fn parse_optional_str_arg(args: &[String], flag: &str) -> Option<String> {
@@ -54,26 +50,52 @@ fn build() {
     }
 }
 
-fn run(runner: &std::path::Path, memory: Option<&str>) {
+fn run(memory: Option<&str>, window: bool, gdb: bool, numa: bool) {
     build();
 
     let kernel: std::path::PathBuf = workspace_root()
         .join("target/riscv64-ferrum/release/ferrum");
 
-    let mut cmd_args: Vec<&str> = vec!["xtask", "run", "--kernel", kernel.to_str().unwrap()];
-    let memory_owned: String;
-    if let Some(m) = memory {
-        memory_owned = m.to_string();
-        cmd_args.extend_from_slice(&["--memory", &memory_owned]);
+    let display_args: &[&str] = if window {
+        &["-serial", "vc:640x480", "-display", "cocoa,zoom-to-fit=on", "-monitor", "none"]
+    } else {
+        &["-nographic"]
+    };
+
+    let gdb_args: &[&str] = if gdb {
+        eprintln!("GDB stub listening on port 1234 — connect with:");
+        eprintln!("  riscv64-unknown-elf-gdb target/riscv64-ferrum/release/ferrum");
+        eprintln!("  (gdb) target remote :1234");
+        &["-s", "-S"]
+    } else {
+        &[]
+    };
+
+    let mut cmd: Command = Command::new("qemu-system-riscv64");
+    cmd.args(["-machine", "virt", "-kernel", kernel.to_str().unwrap()]);
+
+    if numa {
+        let node_mem: &str = memory.unwrap_or("128M");
+        let total_mem: String = format!("{}M", parse_megabytes(node_mem) * 2);
+        cmd.args(["-m", &total_mem]);
+        cmd.args(["-smp", "2"]);
+        cmd.args(["-object", &format!("memory-backend-ram,size={node_mem},id=mem0")]);
+        cmd.args(["-object", &format!("memory-backend-ram,size={node_mem},id=mem1")]);
+        cmd.args(["-numa", "node,nodeid=0,memdev=mem0,cpus=0"]);
+        cmd.args(["-numa", "node,nodeid=1,memdev=mem1,cpus=1"]);
+    } else {
+        cmd.args(["-m", memory.unwrap_or("128M")]);
     }
 
-    let status: std::process::ExitStatus = Command::new("cargo")
-        .args(&cmd_args)
-        .current_dir(runner)
-        .status()
-        .expect("failed to run runner xtask");
+    cmd.args(display_args).args(gdb_args);
 
+    let status: std::process::ExitStatus = cmd.status().expect("failed to run qemu-system-riscv64");
     std::process::exit(status.code().unwrap_or(1));
+}
+
+fn parse_megabytes(s: &str) -> u64 {
+    let s: &str = s.trim_end_matches(|c: char| c.is_alphabetic());
+    s.parse::<u64>().unwrap_or(128)
 }
 
 fn workspace_root() -> std::path::PathBuf {
