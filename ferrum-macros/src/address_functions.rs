@@ -9,7 +9,7 @@ pub fn address_functions(input: TokenStream) -> TokenStream {
 
     let expanded: TokenStream2 = quote! {
         impl #name {
-            pub const unsafe fn new_unchecked(address: usize) -> Self {
+            pub const fn new(address: usize) -> Self {
                 Self(address)
             }
 
