@@ -1,8 +1,7 @@
 use core::fmt;
 
 pub fn _print(args: fmt::Arguments) {
-    use fmt::Write;
-    sbi::debug_console::DebugConsoleWriter.write_fmt(args).ok();
+    crate::arch::console_write(args);
 }
 
 #[macro_export]
