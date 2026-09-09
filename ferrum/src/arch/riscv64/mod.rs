@@ -127,7 +127,7 @@ extern "C" fn virtual_entry(hartid: u64, fdt_address: u64) -> ! {
         ferrum_mm::arch::fixmap::init();
         ferrum_mm::arch::fixmap::map_fdt(ferrum_mm::PhysicalAddress::new(fdt_address as usize));
     }
-    boot::store_hart_id(hartid);
+    crate::process::ThreadControlBlock::current().set_hart_id(hartid as usize);
     platform_info::PlatformInfo::init();
     crate::smp::CPU_ONLINE_MASK.set(hartid as usize);
     crate::process::init();

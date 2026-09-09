@@ -30,6 +30,7 @@ unsafe extern "C" {
 
 pub fn kernel_main() -> ! {
     splash::print();
+    printkln!("[smp] cpu_online_mask={}", crate::smp::CPU_ONLINE_MASK.get());
     memory_init();
     timer::init();
 

@@ -26,6 +26,14 @@ impl ThreadControlBlock {
         let ptr: *mut Self = crate::arch::current_thread_pointer() as *mut Self;
         unsafe { &mut *ptr }
     }
+
+    pub(crate) fn set_hart_id(&mut self, hart_id: usize) {
+        self.thread_info.hart_id = hart_id;
+    }
+
+    pub(crate) fn hart_id() -> usize {
+        Self::current().thread_info.hart_id
+    }
 }
 
 unsafe impl Linked<Links<ThreadControlBlock>> for ThreadControlBlock {

@@ -9,7 +9,6 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 use ferrum_mm::PhysicalAddress;
 use ferrum_mm::VirtualAddress;
 
-use super::boot;
 use super::platform_info::PLATFORM_INFO;
 
 static PLATFORM_LEVEL_INTERRUPT_CONTROLLER_BASE: AtomicUsize = AtomicUsize::new(0);
@@ -27,7 +26,7 @@ fn base() -> usize {
 }
 
 fn context() -> usize {
-    boot::hart_id() as usize * 2 + 1
+    crate::process::ThreadControlBlock::hart_id() * 2 + 1
 }
 
 pub fn set_source_priority(source: usize, priority: u32) {

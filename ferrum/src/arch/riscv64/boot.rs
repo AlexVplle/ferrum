@@ -1,16 +1,4 @@
-use core::sync::atomic::{AtomicU64, Ordering};
-
 use ferrum_mm::arch::fixmap::fdt_virtual_address;
-
-static HART_ID: AtomicU64 = AtomicU64::new(0);
-
-pub fn store_hart_id(hartid: u64) {
-    HART_ID.store(hartid, Ordering::Release);
-}
-
-pub fn hart_id() -> u64 {
-    HART_ID.load(Ordering::Acquire)
-}
 
 pub fn hart_count() -> usize {
     let fdt: fdt::Fdt = match unsafe {

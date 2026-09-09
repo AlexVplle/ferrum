@@ -35,6 +35,12 @@ impl From<usize> for CpuMask {
     }
 }
 
+impl core::fmt::Display for CpuMask {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{:#b}", self.0)
+    }
+}
+
 impl IntoIterator for CpuMask {
     type Item = usize;
     type IntoIter = CpuMaskIter;

@@ -4,7 +4,7 @@ pub enum InterProcessorInterruptMessage {
     CallFunction = 1,
     CpuStop = 2,
     CpuCrashStop = 3,
-    IrqWork = 4,
+    InterruptRequestWork = 4,
     Timer = 5,
     CpuBacktrace = 6,
     KgdbRoundup = 7,
