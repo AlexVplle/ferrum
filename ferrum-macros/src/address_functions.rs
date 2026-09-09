@@ -8,6 +8,75 @@ pub fn address_functions(input: TokenStream) -> TokenStream {
     let name = &input.ident;
 
     let expanded: TokenStream2 = quote! {
+        impl core::fmt::Display for #name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, "{:#x}", self.0)
+            }
+        }
+
+        impl core::fmt::Debug for #name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, "{}({:#x})", stringify!(#name), self.0)
+            }
+        }
+
+        impl core::ops::Add<usize> for #name {
+            type Output = Self;
+            fn add(self, rhs: usize) -> Self {
+                Self(self.0.wrapping_add(rhs))
+            }
+        }
+
+        impl core::ops::Sub<usize> for #name {
+            type Output = Self;
+            fn sub(self, rhs: usize) -> Self {
+                Self(self.0.wrapping_sub(rhs))
+            }
+        }
+
+        impl core::ops::Sub<#name> for #name {
+            type Output = usize;
+            fn sub(self, rhs: #name) -> usize {
+                self.0.wrapping_sub(rhs.0)
+            }
+        }
+
+        impl core::cmp::PartialEq for #name {
+            fn eq(&self, other: &Self) -> bool {
+                self.0 == other.0
+            }
+        }
+
+        impl core::cmp::PartialOrd for #name {
+            fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+                self.0.partial_cmp(&other.0)
+            }
+        }
+
+        impl core::cmp::PartialEq<usize> for #name {
+            fn eq(&self, other: &usize) -> bool {
+                self.0 == *other
+            }
+        }
+
+        impl core::cmp::PartialOrd<usize> for #name {
+            fn partial_cmp(&self, other: &usize) -> Option<core::cmp::Ordering> {
+                self.0.partial_cmp(other)
+            }
+        }
+
+        impl core::ops::AddAssign<usize> for #name {
+            fn add_assign(&mut self, rhs: usize) {
+                self.0 = self.0.wrapping_add(rhs);
+            }
+        }
+
+        impl core::ops::SubAssign<usize> for #name {
+            fn sub_assign(&mut self, rhs: usize) {
+                self.0 = self.0.wrapping_sub(rhs);
+            }
+        }
+
         impl #name {
             pub const fn new(address: usize) -> Self {
                 Self(address)
