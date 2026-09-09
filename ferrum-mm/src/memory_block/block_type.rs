@@ -1,0 +1,36 @@
+use super::region::constants::MAX_REGIONS;
+use super::region::{MemoryBlockRegion, MemoryBlockRegionFlags};
+use crate::physical_address::PhysicalAddress;
+
+const EMPTY_REGION: MemoryBlockRegion = MemoryBlockRegion {
+    base: PhysicalAddress::new(0),
+    size: 0,
+    flags: MemoryBlockRegionFlags::new(),
+    node_id: 0,
+};
+
+pub struct MemoryBlockType {
+    regions: [MemoryBlockRegion; MAX_REGIONS],
+    count: usize,
+}
+
+impl MemoryBlockType {
+    pub const fn new() -> Self {
+        Self {
+            regions: [EMPTY_REGION; MAX_REGIONS],
+            count: 0,
+        }
+    }
+
+    pub fn add(&mut self, region: MemoryBlockRegion) {
+        if self.count < MAX_REGIONS {
+            self.regions[self.count] = region;
+            self.count += 1;
+        }
+    }
+
+    pub fn regions(&self) -> &[MemoryBlockRegion] {
+        &self.regions[..self.count]
+    }
+
+}
