@@ -10,13 +10,14 @@ use ferrum_mm::PhysicalAddress;
 use ferrum_mm::VirtualAddress;
 
 use super::boot;
+use super::platform_info::PLATFORM_INFO;
 
 static PLATFORM_LEVEL_INTERRUPT_CONTROLLER_BASE: AtomicUsize = AtomicUsize::new(0);
 
 pub fn init() {
-    let physical_base: usize = boot::platform_level_interrupt_controller_address()
-        .expect("PLIC not found in FDT");
-    let virtual_base: VirtualAddress = PhysicalAddress::new(physical_base).to_virtual();
+    let virtual_base: VirtualAddress = PLATFORM_INFO.get()
+        .platform_level_interrupt_controller_address()
+        .to_virtual();
     PLATFORM_LEVEL_INTERRUPT_CONTROLLER_BASE.store(virtual_base.as_usize(), Ordering::Release);
     set_threshold(0);
 }

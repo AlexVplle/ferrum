@@ -1,7 +1,7 @@
 use core::sync::atomic::{AtomicUsize, Ordering};
 
-use super::boot;
 use super::csr::{Sie, Sstatus, Time};
+use super::platform_info::PLATFORM_INFO;
 use crate::arch::Timer;
 
 pub static RISCV_TIMER: RiscvTimer = RiscvTimer {
@@ -15,7 +15,7 @@ pub struct RiscvTimer {
 impl Timer for RiscvTimer {
     fn init(&self) {
         let frequency: usize =
-            boot::clock_frequency().expect("timebase-frequency not found in FDT") as usize;
+            PLATFORM_INFO.get().clock_frequency() as usize;
         self.clock_frequency.store(frequency, Ordering::Release);
 
         let mut sie: Sie = Sie::read();

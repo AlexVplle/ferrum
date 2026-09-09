@@ -5,6 +5,7 @@ pub mod boot;
 pub mod constants;
 pub mod context;
 pub mod csr;
+pub mod platform_info;
 pub mod plic;
 pub mod relocate;
 pub mod smp;
@@ -127,6 +128,7 @@ extern "C" fn virtual_entry(hartid: u64, fdt_address: u64) -> ! {
         ferrum_mm::arch::fixmap::map_fdt(ferrum_mm::PhysicalAddress::new(fdt_address as usize));
     }
     boot::store_hart_id(hartid);
+    platform_info::PlatformInfo::init();
     crate::smp::CPU_ONLINE_MASK.set(hartid as usize);
     crate::process::init();
     crate::kernel_main();

@@ -12,6 +12,23 @@ pub fn hart_id() -> u64 {
     HART_ID.load(Ordering::Acquire)
 }
 
+pub fn hart_count() -> usize {
+    let fdt: fdt::Fdt = match unsafe {
+        fdt::Fdt::from_ptr(fdt_virtual_address().as_usize() as *const u8)
+    } {
+        Ok(fdt) => fdt,
+        Err(_) => return 1,
+    };
+
+    fdt.all_nodes()
+        .filter(|node: &fdt::node::FdtNode<'_, '_>| {
+            node.property("device_type")
+                .and_then(|p: fdt::node::NodeProperty<'_>| core::str::from_utf8(p.value).ok())
+                == Some("cpu\0")
+        })
+        .count()
+}
+
 pub fn platform_level_interrupt_controller_address() -> Option<usize> {
     let fdt: fdt::Fdt = unsafe { fdt::Fdt::from_ptr(fdt_virtual_address().as_usize() as *const u8) }.ok()?;
 
