@@ -6,6 +6,9 @@ edition = "2021"
 [dependencies]
 spinlock = { git = "https://github.com/AlexVplle/spinlock" }
 
+[target.'cfg(target_arch = "riscv64")'.dependencies]
+sbi = { path = "../../sbi" }
+
 [features]
 fuzz = []
 
