@@ -129,6 +129,7 @@ impl BuddyAllocator {
     }
 
     fn free_order(&mut self, page_frame_number: usize, order: usize) {
+        debug_assert!(MEM_SECTION.page_frame_number_valid(page_frame_number));
         if order >= MAX_PAGE_ORDER {
             self.push_block(page_frame_number, order);
             return;

@@ -39,6 +39,14 @@ impl MemorySection {
         self.flags.is_online()
     }
 
+    pub fn early_section(&self) -> bool {
+        self.flags.is_early()
+    }
+
+    pub fn online_device_section(&self) -> bool {
+        self.flags.is_online() && self.flags.is_taint_zone_device()
+    }
+
     pub fn set_base_page_frame_number(&mut self, base_page_frame_number: usize) {
         self.base_page_frame_number = base_page_frame_number;
     }
