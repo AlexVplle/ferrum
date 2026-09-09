@@ -5,7 +5,7 @@ use crate::arch::riscv64::constants::MAX_HARTS;
 use super::call_single_data::CallSingleData;
 use super::hart_ipi_state::HartInterProcessorInterruptState;
 use super::ipi_message::InterProcessorInterruptMessage;
-use super::irq_work::IrqWork;
+use super::irq_work::InterruptRequestWork;
 
 pub struct InterProcessorInterruptController {
     states: [HartInterProcessorInterruptState; MAX_HARTS],
@@ -33,7 +33,7 @@ impl InterProcessorInterruptController {
 
     pub fn send_call_func(&self, hart_id: usize, data: NonNull<CallSingleData>) {
         self.states[hart_id].enqueue_call(data);
-        self.states[hart_id].set_pending(InterProcessorInterruptMessage::CallFunc);
+        self.states[hart_id].set_pending(InterProcessorInterruptMessage::CallFunction);
         Self::send_sbi_inter_processor_interrupt(hart_id);
     }
 
@@ -47,9 +47,9 @@ impl InterProcessorInterruptController {
         Self::send_sbi_inter_processor_interrupt(hart_id);
     }
 
-    pub fn send_irq_work(&self, hart_id: usize, work: NonNull<IrqWork>) {
-        self.states[hart_id].enqueue_irq_work(work);
-        self.states[hart_id].set_pending(InterProcessorInterruptMessage::IrqWork);
+    pub fn send_interrupt_request_work(&self, hart_id: usize, work: NonNull<InterruptRequestWork>) {
+        self.states[hart_id].enqueue_interrupt_request_work(work);
+        self.states[hart_id].set_pending(InterProcessorInterruptMessage::InterruptRequestWork);
         Self::send_sbi_inter_processor_interrupt(hart_id);
     }
 
@@ -80,11 +80,11 @@ impl InterProcessorInterruptController {
                 x if x == InterProcessorInterruptMessage::Reschedule as usize => {
                     todo!()
                 }
-                x if x == InterProcessorInterruptMessage::CallFunc as usize => {
+                x if x == InterProcessorInterruptMessage::CallFunction as usize => {
                     for node in state.call_single_queue.take() {
                         let data: NonNull<CallSingleData> = node.cast();
                         let call: &CallSingleData = unsafe { data.as_ref() };
-                        (call.func)(call.data);
+                        (call.function)(call.data);
                     }
                 }
                 x if x == InterProcessorInterruptMessage::CpuStop as usize => {
@@ -93,11 +93,12 @@ impl InterProcessorInterruptController {
                 x if x == InterProcessorInterruptMessage::CpuCrashStop as usize => {
                     crate::arch::halt();
                 }
-                x if x == InterProcessorInterruptMessage::IrqWork as usize => {
-                    for node in state.irq_work_queue.take() {
-                        let work: NonNull<IrqWork> = node.cast();
-                        let irq_work: &IrqWork = unsafe { work.as_ref() };
-                        (irq_work.func)();
+                x if x == InterProcessorInterruptMessage::InterruptRequestWork as usize => {
+                    for node in state.interrupt_request_work_queue.take() {
+                        let work: NonNull<InterruptRequestWork> = node.cast();
+                        let interrupt_request_work: &InterruptRequestWork =
+                            unsafe { work.as_ref() };
+                        (interrupt_request_work.function)();
                     }
                 }
                 x if x == InterProcessorInterruptMessage::Timer as usize => {

@@ -1,20 +1,20 @@
 use ferrum_core::linked_list::llist::LlistNode;
 
-pub type SmpCallFunc = fn(usize);
-pub type SmpCondFunc = fn(usize, usize) -> bool;
+pub type SymmetricMultiprocessingCallFunction = fn(usize);
+pub type SymmetricMultiprocessingConditionFunction = fn(usize, usize) -> bool;
 
 #[repr(C)]
 pub struct CallSingleData {
     pub node: LlistNode,
-    pub func: SmpCallFunc,
+    pub function: SymmetricMultiprocessingCallFunction,
     pub data: usize,
 }
 
 impl CallSingleData {
-    pub fn new(func: SmpCallFunc, data: usize) -> Self {
+    pub fn new(function: SymmetricMultiprocessingCallFunction, data: usize) -> Self {
         Self {
             node: LlistNode::new(),
-            func,
+            function,
             data,
         }
     }

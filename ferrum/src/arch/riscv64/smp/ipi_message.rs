@@ -1,7 +1,7 @@
 #[derive(Clone, Copy)]
 pub enum InterProcessorInterruptMessage {
     Reschedule = 0,
-    CallFunc = 1,
+    CallFunction = 1,
     CpuStop = 2,
     CpuCrashStop = 3,
     IrqWork = 4,

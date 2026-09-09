@@ -1,18 +1,18 @@
 use ferrum_core::linked_list::llist::LlistNode;
 
-pub type IrqWorkFunc = fn();
+pub type InterruptRequestWorkFunction = fn();
 
 #[repr(C)]
-pub struct IrqWork {
+pub struct InterruptRequestWork {
     pub node: LlistNode,
-    pub func: IrqWorkFunc,
+    pub function: InterruptRequestWorkFunction,
 }
 
-impl IrqWork {
-    pub fn new(func: IrqWorkFunc) -> Self {
+impl InterruptRequestWork {
+    pub fn new(function: InterruptRequestWorkFunction) -> Self {
         Self {
             node: LlistNode::new(),
-            func,
+            function,
         }
     }
 }
