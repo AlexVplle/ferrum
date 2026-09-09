@@ -31,6 +31,10 @@ impl MemorySection {
         self.flags.is_marked_present()
     }
 
+    pub fn valid_section(&self) -> bool {
+        self.flags.is_has_memory_map()
+    }
+
     pub fn set_base_page_frame_number(&mut self, base_page_frame_number: usize) {
         self.base_page_frame_number = base_page_frame_number;
     }

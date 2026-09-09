@@ -61,12 +61,27 @@ impl MemorySectionTable {
         }
     }
 
+    pub fn page_frame_number_valid(&self, page_frame_number: usize) -> bool {
+        let section_number: usize = self.section_number_for_page_frame_number(page_frame_number);
+        if section_number >= MAX_SECTIONS {
+            return false;
+        }
+        self.valid_section_nr(section_number)
+    }
+
     pub fn page_frame_number_in_present_section(&self, page_frame_number: usize) -> bool {
-        let section_number = self.section_number_for_page_frame_number(page_frame_number);
+        let section_number: usize = self.section_number_for_page_frame_number(page_frame_number);
         if section_number >= MAX_SECTIONS {
             return false;
         }
         self.present_section_nr(section_number)
+    }
+
+    pub fn valid_section_nr(&self, section_number: usize) -> bool {
+        if !self.is_root_allocated(section_number >> SECTIONS_PER_ROOT_BITS) {
+            return false;
+        }
+        self[section_number].valid_section()
     }
 
     pub fn present_section_nr(&self, section_number: usize) -> bool {
