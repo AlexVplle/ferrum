@@ -17,6 +17,7 @@ pub mod riscv64;
 pub use riscv64::{
     console_write,
     context::Context,
+    current_thread_pointer,
     halt,
     machine_power_off,
     machine_restart,

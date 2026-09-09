@@ -1,5 +1,5 @@
-use crate::memory_management::virtual_address::VirtualAddress;
-use crate::memory_management::virtual_memory_area::{VmaFlags, VirtualMemoryArea};
+use ferrum_mm::VirtualAddress;
+use ferrum_mm::virtual_memory_area::{VirtualMemoryArea, VirtualMemoryAreaFlags};
 
 const MAX_VMAS: usize = 32;
 
@@ -18,7 +18,7 @@ impl MemoryDescriptor {
         }
     }
 
-    pub fn map(&mut self, start: VirtualAddress, end: VirtualAddress, flags: VmaFlags) -> bool {
+    pub fn map(&mut self, start: VirtualAddress, end: VirtualAddress, flags: VirtualMemoryAreaFlags) -> bool {
         if start.as_usize() >= end.as_usize() {
             return false;
         }
@@ -43,7 +43,9 @@ impl MemoryDescriptor {
         let mut tail: Option<VirtualMemoryArea> = None;
 
         for slot in &mut self.vmas[..self.count] {
-            let Some(vma) = slot else { continue; };
+            let Some(vma) = slot else {
+                continue;
+            };
             if !vma.overlaps(start, end) {
                 continue;
             }
@@ -85,7 +87,8 @@ impl MemoryDescriptor {
         self.vmas[..self.count]
             .iter()
             .find_map(|slot: &Option<VirtualMemoryArea>| {
-                slot.as_ref().filter(|vma: &&VirtualMemoryArea| vma.contains(address))
+                slot.as_ref()
+                    .filter(|vma: &&VirtualMemoryArea| vma.contains(address))
             })
     }
 

@@ -4,11 +4,14 @@ use core::sync::atomic::AtomicUsize;
 use super::flags::ProcessFlags;
 use super::kernel_stack::KernelStack;
 use super::process_control_block::{INIT_TASK, ProcessControlBlock};
+use super::thread_info::ThreadInfo;
 use crate::arch::Context;
-use ferrum_core::linked_list::linked::Linked;
-use ferrum_core::linked_list::links::Links;
+use ferrum_core::linked_list::list::linked::Linked;
+use ferrum_core::linked_list::list::links::Links;
 
-pub(super) struct ThreadControlBlock {
+#[repr(C)]
+pub(crate) struct ThreadControlBlock {
+    pub(super) thread_info: ThreadInfo,
     pub(super) run_list: Links<ThreadControlBlock>,
     identifier: u64,
     usage: AtomicUsize,
@@ -16,6 +19,13 @@ pub(super) struct ThreadControlBlock {
     context: Context,
     kernel_stack: *mut KernelStack,
     process: *mut ProcessControlBlock,
+}
+
+impl ThreadControlBlock {
+    pub(crate) fn current() -> &'static mut Self {
+        let ptr: *mut Self = crate::arch::current_thread_pointer() as *mut Self;
+        unsafe { &mut *ptr }
+    }
 }
 
 unsafe impl Linked<Links<ThreadControlBlock>> for ThreadControlBlock {
@@ -29,6 +39,7 @@ static mut INIT_KERNEL_STACK: KernelStack = KernelStack::new();
 
 #[unsafe(no_mangle)]
 pub(super) static mut INIT_THREAD: ThreadControlBlock = ThreadControlBlock {
+    thread_info: ThreadInfo::new(),
     run_list: Links::new(),
     identifier: 0,
     usage: AtomicUsize::new(1),

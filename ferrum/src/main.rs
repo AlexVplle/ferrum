@@ -5,10 +5,11 @@
 mod arch;
 mod die;
 mod elf;
-mod power;
 mod panic;
+mod power;
 mod print;
 mod process;
+mod smp;
 mod splash;
 mod system_state;
 mod timer;
