@@ -80,7 +80,7 @@ impl MemoryBlock {
         self.reserved.regions()
     }
 
-    pub fn free_all_to_buddy<F: FnMut(PhysicalAddress, usize, usize)>(&self, mut on_free_region: F) {
+    pub fn for_each_free_region<F: FnMut(PhysicalAddress, usize, usize)>(&self, mut on_free_region: F) {
         for memory_region in self.memory.regions() {
             let memory_start: usize = memory_region.base.as_usize();
             let memory_end: usize = memory_start + memory_region.size;
@@ -121,6 +121,10 @@ impl MemoryBlock {
                 }
             }
         }
+    }
+
+    pub fn free_all_to_buddy<F: FnMut(PhysicalAddress, usize, usize)>(&self, on_free_region: F) {
+        self.for_each_free_region(on_free_region);
     }
 
     fn alloc_bottom_up(&mut self, size: usize, align: usize) -> Option<PhysicalAddress> {

@@ -13,8 +13,6 @@ mod die;
 mod elf;
 mod panic;
 mod power;
-mod print;
-mod process;
 mod smp;
 mod splash;
 mod system_state;
@@ -36,7 +34,10 @@ unsafe extern "C" {
 
 pub fn kernel_main() -> ! {
     splash::print();
-    printkln!("[smp] cpu_online_mask={}", crate::smp::CPU_ONLINE_MASK.get());
+    ferrum_core::printkln!(
+        "[smp] cpu_online_mask={:#b}",
+        crate::smp::CPU_ONLINE_MASK.get()
+    );
     memory_init();
     timer::init();
 
@@ -48,7 +49,7 @@ fn memory_init() {
     let kernel_end: VirtualAddress = VirtualAddress::new(&raw const (_kernel_end) as usize);
     let kernel_size: usize = kernel_end - kernel_start;
     let kernel_physical_start: PhysicalAddress = kernel_start.to_kernel_physical();
-    printkln!(
+    ferrum_core::printkln!(
         "[kernel] start={} end={} size={} KiB",
         kernel_start,
         kernel_end,
@@ -61,10 +62,10 @@ fn memory_init() {
         let memory_block: &MemoryBlock = &*(&raw const MEMORY_BLOCK);
 
         let regions: &[MemoryBlockRegion] = memory_block.memory_regions();
-        printkln!("[mem] {} region(s) found", regions.len());
+        ferrum_core::printkln!("[mem] {} region(s) found", regions.len());
         let mut total_ram: usize = 0;
         for region in regions {
-            printkln!(
+            ferrum_core::printkln!(
                 "[mem]   base={} size={:#x} node={}",
                 region.base,
                 region.size,
@@ -72,10 +73,10 @@ fn memory_init() {
             );
             total_ram += region.size;
         }
-        printkln!("[mem] total ram: {} MiB", total_ram / (1024 * 1024));
+        ferrum_core::printkln!("[mem] total ram: {} MiB", total_ram / (1024 * 1024));
 
         for reservation in memory_block.reserved_regions() {
-            printkln!(
+            ferrum_core::printkln!(
                 "[mem] reserved base={} size={:#x}",
                 reservation.base,
                 reservation.size
@@ -87,11 +88,15 @@ fn memory_init() {
     ferrum_mm::early::memmap::memmap_init();
 
     unsafe {
+        ferrum_mm::early::memtest::early_memtest(&mut *(&raw mut MEMORY_BLOCK));
+    }
+
+    unsafe {
         (*(&raw const MEMORY_BLOCK)).free_all_to_buddy(
             |base: PhysicalAddress, num_pages: usize, node_id: usize| {
                 ZONE_ALLOCATOR.add_region(base, num_pages, node_id);
             },
         );
     }
-    ZONE_ALLOCATOR.build_zonelists();
+    ZONE_ALLOCATOR.build_alloc_order();
 }
