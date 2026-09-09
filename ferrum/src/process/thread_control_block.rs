@@ -1,12 +1,15 @@
+use core::ptr::NonNull;
 use core::sync::atomic::AtomicU32;
+
 use super::flags::ProcessFlags;
 use super::kernel_stack::KernelStack;
-use super::process_control_block::{ProcessControlBlock, INIT_TASK};
+use super::process_control_block::{INIT_TASK, ProcessControlBlock};
 use crate::arch::Context;
-use crate::data_structures::list_head::ListHead;
+use ferrum_core::linked_list::linked::Linked;
+use ferrum_core::linked_list::links::Links;
 
 pub(super) struct ThreadControlBlock {
-    pub run_list: ListHead,
+    pub(super) run_list: Links<ThreadControlBlock>,
     identifier: u64,
     usage: AtomicU32,
     flags: ProcessFlags,
@@ -15,12 +18,26 @@ pub(super) struct ThreadControlBlock {
     process: *mut ProcessControlBlock,
 }
 
+unsafe impl Linked<Links<ThreadControlBlock>> for ThreadControlBlock {
+    type Handle = NonNull<ThreadControlBlock>;
+
+    fn into_ptr(handle: NonNull<ThreadControlBlock>) -> NonNull<ThreadControlBlock> {
+        handle
+    }
+    fn from_ptr(ptr: NonNull<ThreadControlBlock>) -> NonNull<ThreadControlBlock> {
+        ptr
+    }
+    fn links(ptr: NonNull<ThreadControlBlock>) -> NonNull<Links<ThreadControlBlock>> {
+        unsafe { NonNull::new_unchecked(&raw mut (*ptr.as_ptr()).run_list) }
+    }
+}
+
 #[unsafe(no_mangle)]
 static mut INIT_KERNEL_STACK: KernelStack = KernelStack::new();
 
 #[unsafe(no_mangle)]
 pub(super) static mut INIT_THREAD: ThreadControlBlock = ThreadControlBlock {
-    run_list: ListHead::null(),
+    run_list: Links::new(),
     identifier: 0,
     usage: AtomicU32::new(1),
     flags: ProcessFlags::new(),
