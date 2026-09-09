@@ -1,7 +1,7 @@
 use core::cell::UnsafeCell;
 use core::mem;
 
-use super::link::Link;
+use super::super::link::Link;
 use super::links_inner::LinksInner;
 
 pub struct Links<T> {

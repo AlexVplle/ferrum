@@ -3,8 +3,8 @@ use core::sync::atomic::AtomicUsize;
 
 use super::frame_usage::FrameUsage;
 use crate::allocator::physical::zone::ZoneType;
-use ferrum_core::linked_list::linked::Linked;
-use ferrum_core::linked_list::links::Links;
+use ferrum_core::linked_list::list::linked::Linked;
+use ferrum_core::linked_list::list::links::Links;
 
 pub struct Frame {
     pub links: Links<Frame>,

@@ -1,7 +1,7 @@
 use core::ptr::NonNull;
 
-use crate::linked_list::linked::Linked;
-use crate::linked_list::links::Links;
+use crate::linked_list::list::linked::Linked;
+use crate::linked_list::list::links::Links;
 
 use super::notifier_fn::NotifierFn;
 

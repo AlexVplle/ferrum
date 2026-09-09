@@ -1,7 +1,7 @@
 use core::ptr::NonNull;
 
+use super::super::link::Link;
 use super::iter::Iter;
-use super::link::Link;
 use super::linked::Linked;
 use super::links::Links;
 
@@ -121,7 +121,9 @@ impl<T: Linked<Links<T>>> List<T> {
                 existing_links.set_prev(Some(ptr));
                 match prev {
                     None => self.head = Some(ptr),
-                    Some(prev_ptr) => { unsafe { T::links(prev_ptr).as_mut() }.set_next(Some(ptr)); }
+                    Some(prev_ptr) => {
+                        unsafe { T::links(prev_ptr).as_mut() }.set_next(Some(ptr));
+                    }
                 }
                 self.len += 1;
                 return;

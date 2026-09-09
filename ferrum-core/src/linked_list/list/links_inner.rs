@@ -1,6 +1,6 @@
 use core::marker::PhantomPinned;
 
-use super::link::Link;
+use super::super::link::Link;
 
 pub(super) struct LinksInner<T> {
     pub(super) next: Link<T>,

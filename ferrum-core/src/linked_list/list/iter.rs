@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 
-use super::link::Link;
+use super::super::link::Link;
 use super::linked::Linked;
 use super::links::Links;
 
