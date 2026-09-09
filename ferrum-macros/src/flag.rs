@@ -31,11 +31,7 @@ pub fn flag(input: TokenStream) -> TokenStream {
         #[inline]
         #[allow(dead_code)]
         pub fn #set_ident(&mut self) {
-            unsafe {
-                let ptr: *mut usize = (self as *mut Self).cast::<usize>();
-                let val: usize = core::ptr::read_volatile(ptr);
-                core::ptr::write_volatile(ptr, val | (1 << #bit) as usize)
-            }
+            self.0 |= (1 << #bit) as usize;
         }
 
         #[inline]
@@ -47,19 +43,13 @@ pub fn flag(input: TokenStream) -> TokenStream {
         #[inline]
         #[allow(dead_code)]
         pub fn #unset_ident(&mut self) {
-            unsafe {
-                let ptr: *mut usize = (self as *mut Self).cast::<usize>();
-                let val: usize = core::ptr::read_volatile(ptr);
-                core::ptr::write_volatile(ptr, val & !(1 << #bit) as usize)
-            }
+            self.0 &= !((1 << #bit) as usize);
         }
 
         #[inline]
         #[allow(dead_code)]
         pub fn #is_ident(&self) -> bool {
-            unsafe {
-                core::ptr::read_volatile((self as *const Self).cast::<usize>()) & ((1 << #bit) as usize) != 0
-            }
+            self.0 & ((1 << #bit) as usize) != 0
         }
     };
 
