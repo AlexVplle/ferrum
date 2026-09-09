@@ -1,3 +1,5 @@
+pub mod constants;
+
 use crate::boot_info::{BootInfo, Framebuffer};
 use crate::limine::framebuffer::framebuffer::LimineFramebuffer;
 use crate::limine::framebuffer::request::FRAMEBUFFER_REQUEST;
