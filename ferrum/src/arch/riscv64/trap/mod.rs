@@ -9,164 +9,144 @@ use trap::Trap;
 core::arch::global_asm!(
     r#"
     .section .text
-    .attribute arch, "rv64imafdc"
+    .attribute arch, "rv64gc"
+
+    .macro ALLOCATE_TRAP_FRAME
+    addi sp, sp, -({trap_frame_size})
+    .endm
+
+    .macro SWITCH_TO_KERNEL_STACK
+    sd sp, {user_stack_pointer_offset}(tp)
+    ld sp, {kernel_stack_pointer_offset}(tp)
+    .endm
+
+    .macro SAVE_USER_STACK_POINTER_AND_THREAD_POINTER
+    ld t0,  {user_stack_pointer_offset}(tp)
+    sd t0,  2*{register_size}(sp)
+    csrr t0, sscratch
+    sd t0,  4*{register_size}(sp)
+    sd t0,  {user_thread_pointer_offset}(tp)
+    csrw sscratch, zero
+    .endm
+
+    .macro SAVE_INT_REGS
+    .irp n, 1, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
+    sd x\n, \n * {register_size}(sp)
+    .endr
+    .endm
+
+    .macro RESTORE_INT_REGS
+    .irp n, 1, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
+    ld x\n, \n * {register_size}(sp)
+    .endr
+    .endm
+
+    .macro SAVE_FLOAT_REGS
+    .irp n, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
+    fsd f\n, ({float_regs_frame_slot} + \n) * {register_size}(sp)
+    .endr
+    .endm
+
+    .macro RESTORE_FLOAT_REGS
+    .irp n, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
+    fld f\n, ({float_regs_frame_slot} + \n) * {register_size}(sp)
+    .endr
+    .endm
+
+    .macro SAVE_FLOAT_STATE
+    SAVE_FLOAT_REGS
+    csrr t0, fcsr
+    sw t0, {fcsr_frame_slot}*{register_size}(sp)
+    .endm
+
+    .macro RESTORE_FLOAT_STATE
+    lw t0, {fcsr_frame_slot}*{register_size}(sp)
+    csrw fcsr, t0
+    RESTORE_FLOAT_REGS
+    .endm
+
     .global _trap_entry
     .align 4
 _trap_entry:
-    addi sp, sp, -(69*8)
+    csrrw tp, sscratch, tp
+    beqz tp, _from_kernel
 
-    sd x1,  1*8(sp)
-    addi t0, sp, 69*8
-    sd t0,  2*8(sp)
-    sd x3,  3*8(sp)
-    sd x4,  4*8(sp)
-    sd x5,  5*8(sp)
-    sd x6,  6*8(sp)
-    sd x7,  7*8(sp)
-    sd x8,  8*8(sp)
-    sd x9,  9*8(sp)
-    sd x10, 10*8(sp)
-    sd x11, 11*8(sp)
-    sd x12, 12*8(sp)
-    sd x13, 13*8(sp)
-    sd x14, 14*8(sp)
-    sd x15, 15*8(sp)
-    sd x16, 16*8(sp)
-    sd x17, 17*8(sp)
-    sd x18, 18*8(sp)
-    sd x19, 19*8(sp)
-    sd x20, 20*8(sp)
-    sd x21, 21*8(sp)
-    sd x22, 22*8(sp)
-    sd x23, 23*8(sp)
-    sd x24, 24*8(sp)
-    sd x25, 25*8(sp)
-    sd x26, 26*8(sp)
-    sd x27, 27*8(sp)
-    sd x28, 28*8(sp)
-    sd x29, 29*8(sp)
-    sd x30, 30*8(sp)
-    sd x31, 31*8(sp)
+_from_user:
+    SWITCH_TO_KERNEL_STACK
+    ALLOCATE_TRAP_FRAME
 
+    sd x5,  5*{register_size}(sp)
+    SAVE_USER_STACK_POINTER_AND_THREAD_POINTER
+    SAVE_INT_REGS
+    j _save_csrs
+
+_from_kernel:
+    csrr tp, sscratch
+    csrw sscratch, zero
+    ALLOCATE_TRAP_FRAME
+
+    sd x5,  5*{register_size}(sp)
+    addi t0, sp, {trap_frame_size}
+    sd t0,  2*{register_size}(sp)
+    sd x4,  4*{register_size}(sp)
+    SAVE_INT_REGS
+
+_save_csrs:
     csrr t0, sepc
-    sd t0, 32*8(sp)
+    sd t0, {sepc_frame_slot}*{register_size}(sp)
     csrr t0, scause
-    sd t0, 33*8(sp)
+    sd t0, {scause_frame_slot}*{register_size}(sp)
     csrr t0, stval
-    sd t0, 34*8(sp)
+    sd t0, {stval_frame_slot}*{register_size}(sp)
     csrr t0, sstatus
-    sd t0, 35*8(sp)
+    sd t0, {sstatus_frame_slot}*{register_size}(sp)
 
-    fsd f0,  36*8(sp)
-    fsd f1,  37*8(sp)
-    fsd f2,  38*8(sp)
-    fsd f3,  39*8(sp)
-    fsd f4,  40*8(sp)
-    fsd f5,  41*8(sp)
-    fsd f6,  42*8(sp)
-    fsd f7,  43*8(sp)
-    fsd f8,  44*8(sp)
-    fsd f9,  45*8(sp)
-    fsd f10, 46*8(sp)
-    fsd f11, 47*8(sp)
-    fsd f12, 48*8(sp)
-    fsd f13, 49*8(sp)
-    fsd f14, 50*8(sp)
-    fsd f15, 51*8(sp)
-    fsd f16, 52*8(sp)
-    fsd f17, 53*8(sp)
-    fsd f18, 54*8(sp)
-    fsd f19, 55*8(sp)
-    fsd f20, 56*8(sp)
-    fsd f21, 57*8(sp)
-    fsd f22, 58*8(sp)
-    fsd f23, 59*8(sp)
-    fsd f24, 60*8(sp)
-    fsd f25, 61*8(sp)
-    fsd f26, 62*8(sp)
-    fsd f27, 63*8(sp)
-    fsd f28, 64*8(sp)
-    fsd f29, 65*8(sp)
-    fsd f30, 66*8(sp)
-    fsd f31, 67*8(sp)
-    csrr t0, fcsr
-    sw t0, 68*8(sp)
+    SAVE_FLOAT_STATE
 
     mv a0, sp
     call trap_handler
 
-    ld t0, 32*8(sp)
+    ld t0, {sstatus_frame_slot}*{register_size}(sp)
+    andi t0, t0, {sstatus_spp_bit}
+    beqz t0, _exit_user
+
+_exit_kernel:
+    ld t0, {sepc_frame_slot}*{register_size}(sp)
     csrw sepc, t0
+    ld t0, {sstatus_frame_slot}*{register_size}(sp)
+    csrw sstatus, t0
+    RESTORE_FLOAT_STATE
 
-    lw t0, 68*8(sp)
-    csrw fcsr, t0
-    fld f0,  36*8(sp)
-    fld f1,  37*8(sp)
-    fld f2,  38*8(sp)
-    fld f3,  39*8(sp)
-    fld f4,  40*8(sp)
-    fld f5,  41*8(sp)
-    fld f6,  42*8(sp)
-    fld f7,  43*8(sp)
-    fld f8,  44*8(sp)
-    fld f9,  45*8(sp)
-    fld f10, 46*8(sp)
-    fld f11, 47*8(sp)
-    fld f12, 48*8(sp)
-    fld f13, 49*8(sp)
-    fld f14, 50*8(sp)
-    fld f15, 51*8(sp)
-    fld f16, 52*8(sp)
-    fld f17, 53*8(sp)
-    fld f18, 54*8(sp)
-    fld f19, 55*8(sp)
-    fld f20, 56*8(sp)
-    fld f21, 57*8(sp)
-    fld f22, 58*8(sp)
-    fld f23, 59*8(sp)
-    fld f24, 60*8(sp)
-    fld f25, 61*8(sp)
-    fld f26, 62*8(sp)
-    fld f27, 63*8(sp)
-    fld f28, 64*8(sp)
-    fld f29, 65*8(sp)
-    fld f30, 66*8(sp)
-    fld f31, 67*8(sp)
-
-    ld x1,  1*8(sp)
-    ld x3,  3*8(sp)
-    ld x4,  4*8(sp)
-    ld x5,  5*8(sp)
-    ld x6,  6*8(sp)
-    ld x7,  7*8(sp)
-    ld x8,  8*8(sp)
-    ld x9,  9*8(sp)
-    ld x10, 10*8(sp)
-    ld x11, 11*8(sp)
-    ld x12, 12*8(sp)
-    ld x13, 13*8(sp)
-    ld x14, 14*8(sp)
-    ld x15, 15*8(sp)
-    ld x16, 16*8(sp)
-    ld x17, 17*8(sp)
-    ld x18, 18*8(sp)
-    ld x19, 19*8(sp)
-    ld x20, 20*8(sp)
-    ld x21, 21*8(sp)
-    ld x22, 22*8(sp)
-    ld x23, 23*8(sp)
-    ld x24, 24*8(sp)
-    ld x25, 25*8(sp)
-    ld x26, 26*8(sp)
-    ld x27, 27*8(sp)
-    ld x28, 28*8(sp)
-    ld x29, 29*8(sp)
-    ld x30, 30*8(sp)
-    ld x31, 31*8(sp)
-    ld x2,  2*8(sp)
-
+    RESTORE_INT_REGS
+    ld x4,  4*{register_size}(sp)
+    ld x2,  2*{register_size}(sp)
     sret
-"#
+
+_exit_user:
+    ld t0, {sepc_frame_slot}*{register_size}(sp)
+    csrw sepc, t0
+    ld t0, {sstatus_frame_slot}*{register_size}(sp)
+    csrw sstatus, t0
+    RESTORE_FLOAT_STATE
+
+    csrw sscratch, tp
+    RESTORE_INT_REGS
+    ld x4,  4*{register_size}(sp)
+    ld x2,  2*{register_size}(sp)
+    sret
+"#,
+    trap_frame_size = const frame::TRAP_FRAME_SIZE,
+    kernel_stack_pointer_offset = const crate::process::KERNEL_STACK_POINTER_OFFSET,
+    user_stack_pointer_offset = const crate::process::USER_STACK_POINTER_OFFSET,
+    user_thread_pointer_offset = const crate::process::USER_THREAD_POINTER_OFFSET,
+    register_size = const core::mem::size_of::<usize>(),
+    sepc_frame_slot = const frame::SEPC_FRAME_SLOT,
+    scause_frame_slot = const frame::SCAUSE_FRAME_SLOT,
+    stval_frame_slot = const frame::STVAL_FRAME_SLOT,
+    sstatus_frame_slot = const frame::SSTATUS_FRAME_SLOT,
+    float_regs_frame_slot = const frame::FLOAT_REGS_FRAME_SLOT,
+    fcsr_frame_slot = const frame::FCSR_FRAME_SLOT,
+    sstatus_spp_bit = const crate::arch::riscv64::csr::sstatus::SUPERVISOR_PREVIOUS_PRIVILEGE_BIT,
 );
 
 #[unsafe(no_mangle)]
