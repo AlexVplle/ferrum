@@ -18,6 +18,8 @@ pub fn machine_power_off() -> ! {
     }
 }
 
+pub fn wait_seconds(_n: usize) {}
+
 use crate::boot_info::{BootInfo, Framebuffer};
 use crate::limine::framebuffer::framebuffer::LimineFramebuffer;
 use crate::limine::framebuffer::request::FRAMEBUFFER_REQUEST;

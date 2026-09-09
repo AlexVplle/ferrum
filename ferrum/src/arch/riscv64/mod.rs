@@ -29,6 +29,19 @@ pub fn machine_power_off() -> ! {
     sbi::srst::system_reset(sbi::srst::reset_type::SHUTDOWN, sbi::srst::reset_reason::NO_REASON);
 }
 
+pub fn wait_seconds(n: usize) {
+    use crate::arch::{PLATFORM_TIMER, Timer};
+    let frequency: usize = PLATFORM_TIMER.clock_frequency();
+    if frequency == 0 {
+        return;
+    }
+    let start: usize = PLATFORM_TIMER.current_time();
+    let end: usize = start.wrapping_add(frequency * n);
+    while PLATFORM_TIMER.current_time() < end {
+        unsafe { core::arch::asm!("wfi") };
+    }
+}
+
 pub fn console_write(args: core::fmt::Arguments) {
     use core::fmt::Write;
     sbi::debug_console::DebugConsoleWriter.write_fmt(args).ok();

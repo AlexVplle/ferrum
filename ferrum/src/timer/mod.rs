@@ -5,7 +5,7 @@ use crate::printkln;
 
 use crate::arch::{PLATFORM_TIMER, Timer};
 
-fn tick_interval() -> u64 {
+fn tick_interval() -> usize {
     PLATFORM_TIMER.clock_frequency() * TICK_INTERVAL_S
 }
 
@@ -16,7 +16,7 @@ pub fn init() {
 }
 
 pub fn schedule_next_tick() {
-    let deadline: u64 = PLATFORM_TIMER.current_time() + tick_interval();
+    let deadline: usize = PLATFORM_TIMER.current_time() + tick_interval();
     PLATFORM_TIMER.schedule(deadline);
 }
 

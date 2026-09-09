@@ -1,1 +1,1 @@
-pub const TICK_INTERVAL_S: u64 = 1;
+pub const TICK_INTERVAL_S: usize = 1;
