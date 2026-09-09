@@ -2,6 +2,7 @@
 #![feature(ptr_alignment_type)]
 
 pub mod allocator;
+pub mod gfp;
 pub mod early;
 pub mod arch;
 pub mod memory_block;
