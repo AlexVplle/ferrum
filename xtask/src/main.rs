@@ -11,7 +11,40 @@ fn main() {
             let numa: bool = args.contains(&"--numa".to_string());
             run(memory.as_deref(), window, gdb, numa);
         }
-        _ => eprintln!("Usage: cargo xtask [build|run [--memory <size>] [--window] [--gdb] [--numa]]"),
+        Some("test") => {
+            let miri: bool = args.contains(&"--miri".to_string());
+            let loom: bool = args.contains(&"--loom".to_string());
+            test(miri, loom);
+        }
+        _ => eprintln!("Usage: cargo xtask [build|run [--memory <size>] [--window] [--gdb] [--numa]|test [--miri|--loom]]"),
+    }
+}
+
+fn test(miri: bool, loom: bool) {
+    const EXCLUDE: &[&str] = &["--exclude", "ferrum", "--exclude", "xtask"];
+    if loom {
+        run_test_cmd(&["test", "-p", "ferrum-core"], &[], Some("--cfg loom"), None);
+    } else if miri {
+        run_test_cmd(&["miri", "test", "--workspace"], EXCLUDE, None, Some("-Zmiri-tree-borrows"));
+    } else {
+        run_test_cmd(&["test", "--workspace"], EXCLUDE, None, None);
+        run_test_cmd(&["test", "-p", "ferrum-core"], &[], Some("--cfg loom"), None);
+        run_test_cmd(&["miri", "test", "--workspace"], EXCLUDE, None, Some("-Zmiri-tree-borrows"));
+    }
+}
+
+fn run_test_cmd(subargs: &[&str], extra: &[&str], rustflags: Option<&str>, miriflags: Option<&str>) {
+    let mut cmd: Command = Command::new("cargo");
+    cmd.arg("+nightly").args(subargs).args(extra).current_dir(workspace_root());
+    if let Some(flags) = rustflags {
+        cmd.env("RUSTFLAGS", flags);
+    }
+    if let Some(flags) = miriflags {
+        cmd.env("MIRIFLAGS", flags);
+    }
+    let status: std::process::ExitStatus = cmd.status().expect("failed to run cargo");
+    if !status.success() {
+        std::process::exit(1);
     }
 }
 
@@ -22,7 +55,7 @@ fn parse_optional_str_arg(args: &[String], flag: &str) -> Option<String> {
 
 fn build() {
     let linker_script: std::path::PathBuf = workspace_root().join("ferrum/linker.lds");
-    let rustflags: String = format!("-C link-arg=-T{}", linker_script.display());
+    let rustflags: String = format!("-C link-arg=-T{} -C link-arg=-pie", linker_script.display());
 
     let status: std::process::ExitStatus = Command::new("cargo")
         .args([

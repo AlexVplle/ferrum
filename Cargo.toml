@@ -1,3 +1,4 @@
 [workspace]
-members = ["ferrum", "ferrum-macros", "xtask"]
+members = ["ferrum", "ferrum-core", "ferrum-macros", "ferrum-mm", "xtask"]
+exclude = ["fuzz"]
 resolver = "2"
