@@ -85,6 +85,7 @@ dependencies = [
  "ferrum-macros",
  "ferrum-mm",
  "ferrum-process",
+ "lock_dependency",
  "sbi",
 ]
 
@@ -92,8 +93,10 @@ dependencies = [
 name = "ferrum-core"
 version = "0.1.0"
 dependencies = [
+ "lock_dependency",
  "loom",
  "proptest",
+ "sbi",
  "spinlock",
 ]
 
@@ -113,6 +116,7 @@ dependencies = [
  "fdt",
  "ferrum-core",
  "ferrum-macros",
+ "lock_dependency",
  "proptest",
 ]
 
@@ -192,6 +196,13 @@ name = "linux-raw-sys"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
+
+[[package]]
+name = "lock_dependency"
+version = "0.1.0"
+dependencies = [
+ "spinlock",
+]
 
 [[package]]
 name = "log"

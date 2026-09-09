@@ -5,9 +5,11 @@ edition = "2021"
 
 [features]
 fuzz = []
+debug = []
 
 [dependencies]
 ferrum-core = { path = "../ferrum-core" }
+lock_dependency = { path = "../../lockdep" }
 ferrum-macros = { path = "../ferrum-macros" }
 fdt = "0.1.5"
 

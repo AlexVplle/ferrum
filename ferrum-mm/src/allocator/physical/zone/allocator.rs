@@ -1,23 +1,25 @@
 use super::constants::{MAX_NODES, MAX_ZONELIST_ENTRIES};
 use super::memory_node::MemoryNode;
-use super::zone::Zone;
+use super::node_state::NodeState;
+use super::node_states::NodeStates;
 use super::zone_list::ZoneList;
 use super::zone_ref::ZoneRef;
 use super::zone_type::ZoneType;
 use crate::allocator::physical::allocator::PhysicalAllocator as _;
-use crate::arch::DIRECT_MEMORY_ACCESS_ZONE_END;
 use crate::arch::PAGE_SIZE;
 use crate::page::frame::Frame;
 use crate::page::memory_section_table::MEM_SECTION;
 use crate::physical_address::PhysicalAddress;
-use core::sync::atomic::{AtomicUsize, Ordering};
 use ferrum_core::spinlock::{Spinlock, SpinlockGuard};
+use lock_dependency::LockClassKey;
+
+static ZONE_NODE_KEY: LockClassKey = LockClassKey::new();
 
 pub static ZONE_ALLOCATOR: ZoneAllocator = ZoneAllocator::new();
 
 pub struct ZoneAllocator {
     node_data: [Spinlock<MemoryNode>; MAX_NODES],
-    nr_nodes: AtomicUsize,
+    node_states: NodeStates,
 }
 
 unsafe impl Sync for ZoneAllocator {}
@@ -25,117 +27,66 @@ unsafe impl Sync for ZoneAllocator {}
 impl ZoneAllocator {
     pub const fn new() -> Self {
         const EMPTY_NODE: MemoryNode = MemoryNode::empty(0);
-        const EMPTY_SLOT: Spinlock<MemoryNode> = Spinlock::new(EMPTY_NODE);
+        const EMPTY_SLOT: Spinlock<MemoryNode> = Spinlock::new_tracked(EMPTY_NODE, &ZONE_NODE_KEY, "zone_node");
         Self {
             node_data: [EMPTY_SLOT; MAX_NODES],
-            nr_nodes: AtomicUsize::new(0),
+            node_states: NodeStates::new(),
         }
     }
 
     pub fn add_region(&self, base: PhysicalAddress, num_pages: usize, node_id: usize) {
-        let end: PhysicalAddress = base + num_pages * PAGE_SIZE;
-        if self.nr_nodes.load(Ordering::Acquire) <= node_id {
-            self.node_data[node_id].lock().node_id = node_id;
-            self.nr_nodes.store(node_id + 1, Ordering::Release);
+        if !self.node_states.node_is_set(node_id, NodeState::Online) {
+            self.node_data[node_id].lock().id = node_id;
+            self.node_states.node_set(node_id, NodeState::Online);
         }
-
-        if let Some(direct_memory_access_zone_end) = DIRECT_MEMORY_ACCESS_ZONE_END {
-            if base.as_usize() < direct_memory_access_zone_end {
-                let direct_memory_access_end: PhysicalAddress =
-                    PhysicalAddress::new(end.as_usize().min(direct_memory_access_zone_end));
-                let direct_memory_access_pages: usize =
-                    (direct_memory_access_end - base) / PAGE_SIZE;
-                if direct_memory_access_pages > 0 {
-                    self.init_zone(
-                        node_id,
-                        ZoneType::DirectMemoryAccess,
-                        base,
-                        direct_memory_access_pages,
-                    );
-                    self.tag_frames(
-                        node_id,
-                        ZoneType::DirectMemoryAccess,
-                        base,
-                        direct_memory_access_pages,
-                    );
-                }
-            }
-        }
-
-        let normal_base: PhysicalAddress =
-            if let Some(direct_memory_access_zone_end) = DIRECT_MEMORY_ACCESS_ZONE_END {
-                PhysicalAddress::new(base.as_usize().max(direct_memory_access_zone_end))
-            } else {
-                base
-            };
-        let normal_pages: usize = (end - normal_base) / PAGE_SIZE;
-        if normal_pages > 0 {
-            self.init_zone(node_id, ZoneType::Normal, normal_base, normal_pages);
-            self.tag_frames(node_id, ZoneType::Normal, normal_base, normal_pages);
-        }
+        self.node_data[node_id].lock().add_region(base, num_pages);
     }
 
-    fn init_zone(
-        &self,
-        node_id: usize,
-        zone_type: ZoneType,
-        zone_base: PhysicalAddress,
-        num_pages: usize,
-    ) {
-        let mut node: SpinlockGuard<'_, MemoryNode> = self.node_data[node_id].lock();
-        let zone: &mut Zone = node.zone_mut(zone_type);
-        zone.buddy.init(zone_base, num_pages);
-        node.node_present_pages += num_pages;
-    }
-
-    fn tag_frames(
-        &self,
-        node_id: usize,
-        zone_type: ZoneType,
-        zone_base: PhysicalAddress,
-        num_pages: usize,
-    ) {
-        let zone_end: PhysicalAddress = zone_base + num_pages * PAGE_SIZE;
-        for page_frame_number in zone_base.to_page_frame_number()..zone_end.to_page_frame_number() {
-            let frame: &mut Frame =
-                unsafe { &mut *MEM_SECTION.page_frame_number_to_page(page_frame_number) };
-            frame.set_zone(zone_type);
-            frame.set_node(node_id);
-        }
-    }
-
-    pub fn build_zonelists(&self) {
-        let nr_nodes: usize = self.nr_nodes.load(Ordering::Acquire);
-        for node_id in 0..nr_nodes {
+    pub fn build_alloc_order(&self) {
+        for node_id in self.node_states.for_each_online_node() {
             let mut node: SpinlockGuard<'_, MemoryNode> = self.node_data[node_id].lock();
-            let zonelist: &mut ZoneList = &mut node.node_zonelists[0];
+            let zonelist: &mut ZoneList = &mut node.alloc_order[0];
             zonelist.push(ZoneRef { node_id, zone: ZoneType::Normal });
             zonelist.push(ZoneRef { node_id, zone: ZoneType::DirectMemoryAccess });
-            for other_id in 0..nr_nodes {
+            let mut remote_nodes: [usize; MAX_NODES] = [0; MAX_NODES];
+            let mut remote_count: usize = 0;
+            for other_id in self.node_states.for_each_online_node() {
                 if other_id != node_id {
-                    zonelist.push(ZoneRef { node_id: other_id, zone: ZoneType::Normal });
-                    zonelist.push(ZoneRef { node_id: other_id, zone: ZoneType::DirectMemoryAccess });
+                    remote_nodes[remote_count] = other_id;
+                    remote_count += 1;
                 }
+            }
+            remote_nodes[..remote_count].sort_unstable_by_key(|&other_id: &usize| {
+                crate::early::numa::distance::numa_distance(node_id, other_id)
+            });
+            for i in 0..remote_count {
+                let other_id: usize = remote_nodes[i];
+                zonelist.push(ZoneRef { node_id: other_id, zone: ZoneType::Normal });
+                zonelist.push(ZoneRef { node_id: other_id, zone: ZoneType::DirectMemoryAccess });
             }
         }
     }
 
     pub fn alloc_zone_page(&self, zone_type: ZoneType) -> Option<PhysicalAddress> {
-        self.alloc_zone(PAGE_SIZE, zone_type)
+        self.alloc_zone(PAGE_SIZE, zone_type, self.current_node())
     }
 
-    pub fn alloc_zone(&self, size: usize, zone_type: ZoneType) -> Option<PhysicalAddress> {
-        let nr: usize = self.nr_nodes.load(Ordering::Acquire);
-        if nr == 0 {
+    pub fn alloc_zone(&self, size: usize, zone_type: ZoneType, preferred_node: usize) -> Option<PhysicalAddress> {
+        if self.node_states.node_is_empty(NodeState::Online) {
             return None;
         }
+        let node_id: usize = if self.node_states.node_is_set(preferred_node, NodeState::Online) {
+            preferred_node
+        } else {
+            0
+        };
         let mut entries: [ZoneRef; MAX_ZONELIST_ENTRIES] = [ZoneRef {
             node_id: 0,
             zone: ZoneType::Device,
         }; MAX_ZONELIST_ENTRIES];
         let entry_count: usize = {
-            let node: SpinlockGuard<'_, MemoryNode> = self.node_data[0].lock();
-            let zonelist_entries: &[ZoneRef] = node.node_zonelists[0].entries();
+            let node: SpinlockGuard<'_, MemoryNode> = self.node_data[node_id].lock();
+            let zonelist_entries: &[ZoneRef] = node.alloc_order[0].entries();
             let len: usize = zonelist_entries.len();
             entries[..len].copy_from_slice(zonelist_entries);
             len
@@ -146,8 +97,8 @@ impl ZoneAllocator {
                 continue;
             }
             let slot: usize = entry.node_id;
-            if slot < nr {
-                if let Some(addr) = self.node_data[slot].lock().node_zones[entry.zone as usize]
+            if self.node_states.node_is_set(slot, NodeState::Online) {
+                if let Some(addr) = self.node_data[slot].lock().zones[entry.zone as usize]
                     .buddy
                     .alloc(size, 0)
                 {
@@ -158,8 +109,17 @@ impl ZoneAllocator {
         None
     }
 
+    fn current_node(&self) -> usize {
+        let processor_id: usize = ferrum_core::arch::current_processor_id();
+        unsafe { crate::early::numa::CPU_TO_NODE[processor_id] }
+    }
+
     pub fn alloc_page(&self) -> Option<PhysicalAddress> {
-        self.alloc_zone_page(ZoneType::Normal)
+        self.alloc_zone(PAGE_SIZE, ZoneType::Normal, self.current_node())
+    }
+
+    pub fn alloc_pages_node(&self, node_id: usize) -> Option<PhysicalAddress> {
+        self.alloc_zone(PAGE_SIZE, ZoneType::Normal, node_id)
     }
 
     pub fn free_page(&self, address: PhysicalAddress) {
@@ -171,9 +131,8 @@ impl ZoneAllocator {
         let frame: &Frame = unsafe { &*MEM_SECTION.page_frame_number_to_page(page_frame_number) };
         let slot: usize = frame.node;
         let zone_type: ZoneType = frame.zone;
-        let nr: usize = self.nr_nodes.load(Ordering::Acquire);
-        if slot < nr {
-            self.node_data[slot].lock().node_zones[zone_type as usize]
+        if self.node_states.node_is_set(slot, NodeState::Online) {
+            self.node_data[slot].lock().zones[zone_type as usize]
                 .buddy
                 .free(address, size);
         }

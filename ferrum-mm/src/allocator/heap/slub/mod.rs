@@ -1,5 +1,6 @@
 pub mod free_object;
 
+use alloc::boxed::Box;
 use core::ptr::NonNull;
 
 use crate::allocator::physical::zone::allocator::ZONE_ALLOCATOR;
@@ -10,8 +11,12 @@ use crate::virtual_address::VirtualAddress;
 use ferrum_core::linked_list::list::List;
 use ferrum_core::spinlock::Spinlock;
 use free_object::FreeObject;
+use lock_dependency::LockClassKey;
+
+static SLUB_PARTIAL_KEY: LockClassKey = LockClassKey::new();
 
 pub struct SlubCache {
+    name: &'static str,
     object_size: usize,
     partial: Spinlock<List<Frame>>,
 }
@@ -20,11 +25,20 @@ unsafe impl Send for SlubCache {}
 unsafe impl Sync for SlubCache {}
 
 impl SlubCache {
-    pub const fn new(object_size: usize) -> Self {
+    pub const fn new(name: &'static str, object_size: usize) -> Self {
         Self {
+            name,
             object_size,
-            partial: Spinlock::new(List::new()),
+            partial: Spinlock::new_tracked(List::new(), &SLUB_PARTIAL_KEY, "slub_partial"),
         }
+    }
+
+    pub fn create(name: &'static str, size: usize) -> Box<Self> {
+        Box::new(Self::new(name, size))
+    }
+
+    pub fn name(&self) -> &'static str {
+        self.name
     }
 
     fn frame_of(ptr: NonNull<u8>) -> *mut Frame {
