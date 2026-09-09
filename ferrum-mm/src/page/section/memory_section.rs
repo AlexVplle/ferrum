@@ -2,7 +2,7 @@ use core::ptr::NonNull;
 use core::sync::atomic::AtomicUsize;
 
 use super::constants::PAGES_PER_SECTION;
-use super::usage::MemSectionUsage;
+use super::usage::MemorySectionUsage;
 use crate::arch::PAGE_SHIFT;
 use crate::page::frame::Frame;
 
@@ -12,7 +12,7 @@ pub static MIN_LOW_PAGE_FRAME_NUMBER: AtomicUsize = AtomicUsize::new(usize::MAX)
 pub struct MemorySection {
     pub section_memory_map: Option<NonNull<Frame>>,
     pub base_page_frame_number: usize,
-    pub usage: MemSectionUsage,
+    pub usage: MemorySectionUsage,
 }
 
 impl MemorySection {
@@ -20,7 +20,7 @@ impl MemorySection {
         Self {
             section_memory_map: None,
             base_page_frame_number: 0,
-            usage: MemSectionUsage::new(),
+            usage: MemorySectionUsage::new(),
         }
     }
 

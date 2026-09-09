@@ -1,10 +1,10 @@
 use super::constants::SUBSECTIONS_PER_SECTION;
 
-pub struct MemSectionUsage {
+pub struct MemorySectionUsage {
     pub subsection_map: usize,
 }
 
-impl MemSectionUsage {
+impl MemorySectionUsage {
     pub const fn new() -> Self {
         Self { subsection_map: 0 }
     }
