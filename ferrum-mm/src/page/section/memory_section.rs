@@ -1,7 +1,7 @@
 use core::ptr::NonNull;
 use core::sync::atomic::AtomicUsize;
 
-use super::constants::PAGES_PER_SECTION;
+use super::constants::{PAGES_PER_SECTION, PAGES_PER_SUBSECTION};
 use super::flags::MemorySectionFlags;
 use super::usage::MemorySectionUsage;
 use crate::arch::PAGE_SHIFT;
@@ -41,6 +41,12 @@ impl MemorySection {
 
     pub fn early_section(&self) -> bool {
         self.flags.is_early()
+    }
+
+    pub fn subsection_map_index(&self, page_frame_number: usize) -> usize {
+        debug_assert!(page_frame_number >= self.base_page_frame_number);
+        debug_assert!(page_frame_number < self.base_page_frame_number + PAGES_PER_SECTION);
+        (page_frame_number - self.base_page_frame_number) / PAGES_PER_SUBSECTION
     }
 
     pub fn online_device_section(&self) -> bool {

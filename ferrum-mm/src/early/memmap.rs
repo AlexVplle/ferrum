@@ -1,6 +1,6 @@
 use crate::memory_block::{MemoryBlockRegion, MEMORY_BLOCK};
 use crate::page::frame::Frame;
-use crate::page::section::constants::{PAGES_PER_SECTION, SECTIONS_PER_ROOT_BITS, SUBSECTIONS_PER_SECTION};
+use crate::page::section::constants::{PAGES_PER_SECTION, PAGES_PER_SUBSECTION, SECTIONS_PER_ROOT_BITS, SUBSECTIONS_PER_SECTION};
 use crate::page::section::{MEM_SECTION, MAX_PAGE_FRAME_NUMBER, MIN_LOW_PAGE_FRAME_NUMBER, MemorySection};
 use crate::physical_address::PhysicalAddress;
 use core::sync::atomic::Ordering;
@@ -47,11 +47,10 @@ pub fn memmap_init() {
             section.flags.set_online();
             section.flags.set_early();
 
-            let pages_per_subsection: usize = PAGES_PER_SECTION / SUBSECTIONS_PER_SECTION;
             for subsection in 0..SUBSECTIONS_PER_SECTION {
                 let subsection_start: usize =
-                    section_base_page_frame_number + subsection * pages_per_subsection;
-                let subsection_end: usize = subsection_start + pages_per_subsection;
+                    section_base_page_frame_number + subsection * PAGES_PER_SUBSECTION;
+                let subsection_end: usize = subsection_start + PAGES_PER_SUBSECTION;
                 if subsection_start < end_page_frame_number
                     && subsection_end > start_page_frame_number
                 {
