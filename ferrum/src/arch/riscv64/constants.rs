@@ -1,0 +1,11 @@
+pub const SECTION_SIZE_BITS: u64 = 27;
+pub const MAX_PHYSMEM_BITS: u64 = 56;
+pub const HIGHER_HALF_DIRECT_MAP_BASE: usize = 0xFFFFFFC000000000;
+
+pub const PHYSICAL_PAGE_NUMBER_SHIFT: usize = 10;
+pub const PHYSICAL_PAGE_NUMBER_MASK: usize = 0x003FFFFFFFFFFC00;
+
+pub const VIRTUAL_PAGE_NUMBER_MASK: usize = 0x1FF;
+pub const PAGE_TABLE_LEVEL0_SHIFT: usize = 12;
+pub const PAGE_TABLE_LEVEL1_SHIFT: usize = 21;
+pub const PAGE_TABLE_LEVEL2_SHIFT: usize = 30;
