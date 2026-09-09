@@ -3,6 +3,8 @@ ENTRY(_start)
 SECTIONS {
     . = 0xffffffff80200000;
 
+    _kernel_start = .;
+
     .limine_requests : {
         KEEP(*(.limine_requests_start))
         KEEP(*(.limine_requests))
@@ -24,4 +26,6 @@ SECTIONS {
     .bss : {
         *(.bss .bss.*)
     }
+
+    _kernel_end = .;
 }

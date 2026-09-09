@@ -1,10 +1,9 @@
 SECTIONS {
-    _kernel_start = .;
-
     .text : { *(.text .text.*) }
     .rodata : { *(.rodata .rodata.*) }
     .data : { *(.data .data.*) }
     .bss : { *(.bss .bss.*) *(COMMON) }
 
-    _kernel_end = .;
+    _kernel_start = ADDR(.text);
+    _kernel_end = ADDR(.bss) + SIZEOF(.bss);
 }
