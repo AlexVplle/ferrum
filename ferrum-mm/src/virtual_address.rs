@@ -21,6 +21,6 @@ impl VirtualAddress {
 
     pub fn to_page(self) -> *mut Frame {
         let page_frame_number: usize = self.to_page_frame_number();
-        crate::page::memory_section_table::MEM_SECTION.page_frame_number_to_page(page_frame_number)
+        crate::page::section::MEM_SECTION.page_frame_number_to_page(page_frame_number)
     }
 }

@@ -3,13 +3,13 @@ use core::sync::atomic::{AtomicPtr, Ordering};
 use super::constants::{
     NR_SECTION_ROOTS, PAGE_FRAME_NUMBER_SECTION_SHIFT, SECTIONS_PER_ROOT, SECTIONS_PER_ROOT_BITS,
 };
-use super::frame::Frame;
 use super::memory_section::MemorySection;
 use crate::memory_block::MEMORY_BLOCK;
+use crate::page::frame::Frame;
 
-pub(crate) struct MemSectionTable([AtomicPtr<MemorySection>; NR_SECTION_ROOTS]);
+pub(crate) struct MemorySectionTable([AtomicPtr<MemorySection>; NR_SECTION_ROOTS]);
 
-impl MemSectionTable {
+impl MemorySectionTable {
     pub(crate) const fn new() -> Self {
         Self([const { AtomicPtr::new(core::ptr::null_mut()) }; NR_SECTION_ROOTS])
     }
@@ -68,7 +68,7 @@ impl MemSectionTable {
     }
 }
 
-impl core::ops::Index<usize> for MemSectionTable {
+impl core::ops::Index<usize> for MemorySectionTable {
     type Output = MemorySection;
     fn index(&self, section_number: usize) -> &MemorySection {
         let root: usize = section_number >> SECTIONS_PER_ROOT_BITS;
@@ -77,6 +77,4 @@ impl core::ops::Index<usize> for MemSectionTable {
     }
 }
 
-pub(crate) static MEM_SECTION: MemSectionTable = MemSectionTable::new();
-
-
+pub static MEM_SECTION: MemorySectionTable = MemorySectionTable::new();

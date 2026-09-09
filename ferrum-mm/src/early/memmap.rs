@@ -1,8 +1,7 @@
 use crate::memory_block::{MemoryBlockRegion, MEMORY_BLOCK};
-use crate::page::constants::{PAGES_PER_SECTION, SECTIONS_PER_ROOT_BITS};
 use crate::page::frame::Frame;
-use crate::page::memory_section::{MemorySection, MAX_PAGE_FRAME_NUMBER, MIN_LOW_PAGE_FRAME_NUMBER};
-use crate::page::memory_section_table::MEM_SECTION;
+use crate::page::section::constants::{PAGES_PER_SECTION, SECTIONS_PER_ROOT_BITS};
+use crate::page::section::{MEM_SECTION, MAX_PAGE_FRAME_NUMBER, MIN_LOW_PAGE_FRAME_NUMBER, MemorySection};
 use crate::physical_address::PhysicalAddress;
 use core::sync::atomic::Ordering;
 

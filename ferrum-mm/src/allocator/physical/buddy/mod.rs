@@ -8,8 +8,8 @@ use super::allocator::PhysicalAllocator;
 use crate::arch::PAGE_SIZE;
 use crate::memory_block::MEMORY_BLOCK;
 use crate::page::{
-    frame::Frame, frame_usage::FrameUsage, memory_section::page_frame_number_to_physical,
-    memory_section_table::MEM_SECTION,
+    frame::Frame, frame_usage::FrameUsage,
+    section::{MEM_SECTION, memory_section::page_frame_number_to_physical},
 };
 use crate::physical_address::PhysicalAddress;
 use crate::virtual_address::VirtualAddress;

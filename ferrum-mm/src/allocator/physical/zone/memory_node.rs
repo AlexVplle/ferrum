@@ -3,7 +3,7 @@ use super::zone::Zone;
 use super::zone_list::ZoneList;
 use super::zone_type::ZoneType;
 use crate::arch::{DIRECT_MEMORY_ACCESS_ZONE_END, PAGE_SIZE};
-use crate::page::memory_section_table::MEM_SECTION;
+use crate::page::section::MEM_SECTION;
 use crate::page::frame::Frame;
 use crate::physical_address::PhysicalAddress;
 

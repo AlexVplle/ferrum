@@ -1,0 +1,12 @@
+pub use crate::arch::{MAX_PHYSMEM_BITS, SECTION_SIZE_BITS};
+
+pub const SECTION_SIZE: usize = 1 << SECTION_SIZE_BITS;
+pub const PAGES_PER_SECTION: usize = SECTION_SIZE / crate::arch::PAGE_SIZE;
+pub const MAX_SECTIONS: usize = 1 << (MAX_PHYSMEM_BITS - SECTION_SIZE_BITS);
+
+pub const PAGE_FRAME_NUMBER_SECTION_SHIFT: usize = SECTION_SIZE_BITS - crate::arch::PAGE_SHIFT;
+pub const SECTIONS_PER_ROOT_BITS: usize = 16;
+pub const SECTIONS_PER_ROOT: usize = 1 << SECTIONS_PER_ROOT_BITS;
+pub const NR_SECTION_ROOTS: usize = MAX_SECTIONS / SECTIONS_PER_ROOT;
+
+pub const SUBSECTIONS_PER_SECTION: usize = 32;

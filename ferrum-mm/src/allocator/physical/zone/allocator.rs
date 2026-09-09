@@ -8,7 +8,7 @@ use super::zone_type::ZoneType;
 use crate::allocator::physical::allocator::PhysicalAllocator as _;
 use crate::arch::PAGE_SIZE;
 use crate::page::frame::Frame;
-use crate::page::memory_section_table::MEM_SECTION;
+use crate::page::section::MEM_SECTION;
 use crate::physical_address::PhysicalAddress;
 use ferrum_core::spinlock::{Spinlock, SpinlockGuard};
 use lock_dependency::LockClassKey;
