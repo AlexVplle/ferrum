@@ -1,11 +1,13 @@
-use core::ptr::NonNull;
+use ferrum_core::linked_list::list::List;
+
+use crate::allocator::heap::slub::free_object::FreeObject;
 
 pub enum FrameUsage {
     Uninitialized,
     Buddy { order: usize },
     Kernel,
     PageTable,
-    Slab { inuse: usize, free: Option<NonNull<usize>> },
+    Slab { free: List<FreeObject> },
 }
 
 impl FrameUsage {

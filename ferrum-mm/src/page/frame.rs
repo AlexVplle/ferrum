@@ -2,7 +2,9 @@ use core::ptr::NonNull;
 use core::sync::atomic::AtomicUsize;
 
 use super::frame_usage::FrameUsage;
+use crate::allocator::heap::slub::free_object::FreeObject;
 use crate::allocator::physical::zone::ZoneType;
+use ferrum_core::linked_list::list::List;
 use ferrum_core::linked_list::list::linked::Linked;
 use ferrum_core::linked_list::list::links::Links;
 
@@ -33,8 +35,24 @@ impl Frame {
         &mut self.usage
     }
 
-    pub fn set_usage(&mut self, usage: FrameUsage) {
-        self.usage = usage;
+    pub fn set_uninitialized(&mut self) {
+        self.usage = FrameUsage::Uninitialized;
+    }
+
+    pub fn set_buddy(&mut self, order: usize) {
+        self.usage = FrameUsage::Buddy { order };
+    }
+
+    pub fn set_kernel(&mut self) {
+        self.usage = FrameUsage::Kernel;
+    }
+
+    pub fn set_page_table(&mut self) {
+        self.usage = FrameUsage::PageTable;
+    }
+
+    pub fn set_slab(&mut self, free: List<FreeObject>) {
+        self.usage = FrameUsage::Slab { free };
     }
 
     pub fn set_zone(&mut self, zone: ZoneType) {
