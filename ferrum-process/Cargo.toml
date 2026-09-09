@@ -1,0 +1,9 @@
+[package]
+name = "ferrum-process"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ferrum-core = { path = "../ferrum-core" }
+ferrum-macros = { path = "../ferrum-macros" }
+ferrum-mm = { path = "../ferrum-mm" }
