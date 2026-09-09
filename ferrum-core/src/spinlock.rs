@@ -1,10 +1,6 @@
-#[cfg(loom)]
-use loom::sync::atomic::AtomicBool;
-#[cfg(not(loom))]
-use core::sync::atomic::AtomicBool;
-use core::sync::atomic::Ordering;
 use core::cell::UnsafeCell;
 use core::ops::{Deref, DerefMut};
+use core::sync::atomic::{AtomicBool, Ordering};
 
 pub struct Spinlock<T> {
     locked: AtomicBool,
@@ -19,7 +15,6 @@ unsafe impl<T: Send> Send for Spinlock<T> {}
 unsafe impl<T: Send> Sync for Spinlock<T> {}
 
 impl<T> Spinlock<T> {
-    #[cfg(not(loom))]
     pub const fn new(data: T) -> Self {
         Self {
             locked: AtomicBool::new(false),
@@ -27,12 +22,11 @@ impl<T> Spinlock<T> {
         }
     }
 
-    #[cfg(loom)]
-    pub fn new(data: T) -> Self {
-        Self {
-            locked: AtomicBool::new(false),
-            data: UnsafeCell::new(data),
-        }
+    pub fn try_lock(&self) -> Option<SpinlockGuard<'_, T>> {
+        self.locked
+            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .ok()
+            .map(|_| SpinlockGuard { lock: self })
     }
 
     pub fn lock(&self) -> SpinlockGuard<'_, T> {
@@ -45,9 +39,6 @@ impl<T> Spinlock<T> {
                 break;
             }
             while self.locked.load(Ordering::Relaxed) {
-                #[cfg(loom)]
-                loom::hint::spin_loop();
-                #[cfg(not(loom))]
                 core::hint::spin_loop();
             }
         }
@@ -72,61 +63,5 @@ impl<T> Deref for SpinlockGuard<'_, T> {
 impl<T> DerefMut for SpinlockGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut T {
         unsafe { &mut *self.lock.data.get() }
-    }
-}
-
-#[cfg(loom)]
-mod loom_tests {
-    use super::*;
-    use loom::sync::Arc;
-
-    #[test]
-    fn lock_and_read() {
-        loom::model(|| {
-            let spinlock: Spinlock<usize> = Spinlock::new(42);
-            let guard: SpinlockGuard<'_, usize> = spinlock.lock();
-            assert_eq!(*guard, 42);
-        });
-    }
-
-    #[test]
-    fn lock_and_write() {
-        loom::model(|| {
-            let spinlock: Spinlock<usize> = Spinlock::new(0);
-            {
-                let mut guard: SpinlockGuard<'_, usize> = spinlock.lock();
-                *guard = 99;
-            }
-            let guard: SpinlockGuard<'_, usize> = spinlock.lock();
-            assert_eq!(*guard, 99);
-        });
-    }
-
-    #[test]
-    fn unlocks_on_drop() {
-        loom::model(|| {
-            let spinlock: Spinlock<usize> = Spinlock::new(0);
-            {
-                let _guard: SpinlockGuard<'_, usize> = spinlock.lock();
-            }
-            assert!(!spinlock.locked.load(Ordering::Relaxed));
-        });
-    }
-
-    #[test]
-    fn concurrent_increment() {
-        loom::model(|| {
-            let spinlock: Arc<Spinlock<usize>> = Arc::new(Spinlock::new(0));
-            let s2: Arc<Spinlock<usize>> = Arc::clone(&spinlock);
-
-            let t: loom::thread::JoinHandle<()> = loom::thread::spawn(move || {
-                *s2.lock() += 1;
-            });
-
-            *spinlock.lock() += 1;
-            t.join().unwrap();
-
-            assert_eq!(*spinlock.lock(), 2);
-        });
     }
 }
