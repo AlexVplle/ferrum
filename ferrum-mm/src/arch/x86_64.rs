@@ -1,0 +1,9 @@
+pub const PAGE_SHIFT: usize = 12;
+pub const PAGE_SIZE: usize = 1 << PAGE_SHIFT;
+pub const PAGE_MASK: usize = !(PAGE_SIZE - 1);
+pub const GIGA_PAGE_SIZE: usize = 1 << 30;
+pub const GIGA_PAGE_MASK: usize = !(GIGA_PAGE_SIZE - 1);
+pub const PAGE_OFFSET: usize = 0xFFFF880000000000;
+pub const PHYSICAL_TO_VIRTUAL_OFFSET: usize = PAGE_OFFSET;
+pub const SECTION_SIZE_BITS: usize = 27;
+pub const MAX_PHYSMEM_BITS: usize = 52;
