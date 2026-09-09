@@ -1,37 +1,19 @@
 # Ferrum
 
-A bare-metal x86_64 kernel written in Rust, built from scratch without any OS abstractions.
+A bare-metal kernel written in Rust, built from scratch.
 
-Developed following [Writing an OS in Rust](https://os.phil-opp.com/) by Philipp Oppermann.
+Inspired by:
+- [Writing an OS in Rust](https://os.phil-opp.com/) by Philipp Oppermann
+- [Operating Systems: Three Easy Pieces](https://ostep.org/) by Arpaci-Dusseau
+- [xv6](https://github.com/mit-pdos/xv6-riscv) by MIT
+- [OSDev Wiki](https://wiki.osdev.org/)
 
 ## Requirements
 
-- [Rust nightly](https://rustup.rs/) (automatically selected via `rust-toolchain.toml`)
-- [`bootimage`](https://github.com/rust-osdev/bootimage) — creates a bootable disk image
-
-```sh
-cargo install bootimage
-```
-
-- QEMU (to run the kernel)
-
-```sh
-brew install qemu  # macOS
-```
+- [Rust nightly](https://rustup.rs/)
 
 ## Build
 
 ```sh
-cargo build
+cargo xtask build
 ```
-
-The default target is `x86_64-ferrum.json` (bare-metal, no OS, no SSE, redzone disabled).
-`core` and `compiler_builtins` are compiled from source via `build-std`.
-
-## Run
-
-```sh
-cargo run
-```
-
-This uses `bootimage runner` to build a bootable image and launch it in QEMU.
