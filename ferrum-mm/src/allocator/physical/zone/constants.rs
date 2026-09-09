@@ -1,0 +1,1 @@
+pub const DIRECT_MEMORY_ACCESS_ZONE_END: usize = 0x1000000;
