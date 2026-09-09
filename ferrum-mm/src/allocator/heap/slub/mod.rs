@@ -9,14 +9,14 @@ use crate::physical_address::PhysicalAddress;
 use crate::virtual_address::VirtualAddress;
 use ferrum_core::linked_list::list::List;
 
-pub struct SlabCache {
+pub struct SlubCache {
     object_size: usize,
     partial: List<Frame>,
 }
 
-unsafe impl Send for SlabCache {}
+unsafe impl Send for SlubCache {}
 
-impl SlabCache {
+impl SlubCache {
     pub const fn new(object_size: usize) -> Self {
         Self {
             object_size,
@@ -26,7 +26,7 @@ impl SlabCache {
 
     fn frame_of(ptr: NonNull<u8>) -> *mut Frame {
         let page_base: usize = ptr.as_ptr() as usize & PAGE_MASK;
-        unsafe { VirtualAddress::new(page_base).to_page() }
+        VirtualAddress::new(page_base).to_page()
     }
 
     fn refill(&mut self) {
@@ -45,7 +45,7 @@ impl SlabCache {
             free = NonNull::new(obj);
         }
 
-        frame.usage = FrameUsage::Slab { inuse: 0, free };
+        frame.set_usage(FrameUsage::Slab { inuse: 0, free });
         self.partial.push_front(NonNull::from(frame));
     }
 
@@ -54,7 +54,7 @@ impl SlabCache {
             self.refill();
         }
         let frame: &mut Frame = unsafe { self.partial.front()?.as_mut() };
-        let FrameUsage::Slab { inuse, free } = &mut frame.usage else {
+        let FrameUsage::Slab { inuse, free } = frame.get_usage_mut() else {
             return None;
         };
         let head: NonNull<usize> = (*free)?;
@@ -68,7 +68,7 @@ impl SlabCache {
 
     pub fn free(&mut self, ptr: NonNull<u8>) {
         let frame: &mut Frame = unsafe { &mut *Self::frame_of(ptr) };
-        let FrameUsage::Slab { inuse, free } = &mut frame.usage else {
+        let FrameUsage::Slab { inuse, free } = frame.get_usage_mut() else {
             return;
         };
         let was_full: bool = free.is_none();
