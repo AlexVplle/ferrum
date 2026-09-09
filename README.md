@@ -43,6 +43,7 @@ Like every good thing that exists, it must run Doom.
 - [ ] Watermarks (WMARK_MIN/LOW/HIGH + kswapd)
 - [ ] Memory compaction
 - [ ] ZONE_MOVABLE
+- [ ] Memory policy
 - [ ] Virtual memory areas (mm_struct + VMA)
 - [ ] Red-Black tree for VMA lookup
 - [ ] vmalloc
@@ -71,6 +72,7 @@ Like every good thing that exists, it must run Doom.
 - [ ] Pluggable allocator selection (physical allocator, heap allocator, scheduler)
 
 ### Processes
+- [ ] Per-CPU data
 - [ ] Scheduler
 - [ ] Threads
 - [ ] SMP
