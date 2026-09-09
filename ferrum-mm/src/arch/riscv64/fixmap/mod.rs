@@ -4,6 +4,7 @@ use super::paging::early_paging::EARLY_PAGE_DIRECTORY;
 use super::paging::page_table::PageTable;
 use super::paging::page_table_entry::PageTableEntry;
 use super::paging::page_table_entry_flags::PageTableEntryFlags;
+use super::paging::tlb::flush_tlb_all;
 use crate::arch::PAGE_SIZE;
 use crate::physical_address::PhysicalAddress;
 use crate::virtual_address::VirtualAddress;
@@ -37,7 +38,7 @@ pub fn map_fdt(physical_address: PhysicalAddress) {
 
     unsafe {
         FIXMAP_LEVEL0_TABLE[0] = PageTableEntry::new(base, leaf);
-        core::arch::asm!("sfence.vma zero, zero", options(nostack));
+        flush_tlb_all();
 
         let fdt_virtual_start: usize = FIXMAP_BASE + within_page_offset;
         let fdt: fdt::Fdt = fdt::Fdt::from_ptr(fdt_virtual_start as *const u8).unwrap();
@@ -48,7 +49,7 @@ pub fn map_fdt(physical_address: PhysicalAddress) {
             FIXMAP_LEVEL0_TABLE[i] = PageTableEntry::new(base + i * PAGE_SIZE, leaf);
         }
         if page_count > 1 {
-            core::arch::asm!("sfence.vma zero, zero", options(nostack));
+            flush_tlb_all();
         }
     }
 }

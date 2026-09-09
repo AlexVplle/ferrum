@@ -5,6 +5,7 @@ use super::page_table::PageTable;
 use super::page_table_entry::PageTableEntry;
 use super::page_table_entry_flags::PageTableEntryFlags;
 use super::satp::Satp;
+use super::tlb::flush_tlb_all;
 use crate::arch::{GIGA_PAGE_SIZE, PAGE_TABLE_LEVEL2_SHIFT, VIRTUAL_PAGE_NUMBER_MASK};
 use crate::memory_block::{MemoryBlockRegion, MEMORY_BLOCK};
 use crate::physical_address::PhysicalAddress;
@@ -56,5 +57,5 @@ pub fn setup_direct_map() {
         .set_sv39()
         .with_root_physical_address(swapper_physical_address.as_usize())
         .write();
-    unsafe { core::arch::asm!("sfence.vma zero, zero", options(nostack)) };
+    flush_tlb_all();
 }
