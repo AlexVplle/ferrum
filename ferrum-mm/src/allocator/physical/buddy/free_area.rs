@@ -32,12 +32,15 @@ impl FreeArea {
         unsafe { self.list.remove(node) };
     }
 
-    pub fn toggle_and_test_buddy_bit(&mut self, bit_index: usize) -> bool {
+    pub fn toggle_buddy_bit(&mut self, bit_index: usize) {
         let word_index: usize = bit_index / usize::BITS as usize;
         let bit_offset: usize = bit_index % usize::BITS as usize;
-        unsafe {
-            *self.map.add(word_index) ^= 1 << bit_offset;
-            (*self.map.add(word_index) >> bit_offset) & 1 == 0
-        }
+        unsafe { *self.map.add(word_index) ^= 1 << bit_offset };
+    }
+
+    pub fn test_buddy_bit(&self, bit_index: usize) -> bool {
+        let word_index: usize = bit_index / usize::BITS as usize;
+        let bit_offset: usize = bit_index % usize::BITS as usize;
+        unsafe { ((*self.map.add(word_index)) >> bit_offset) & 1 == 1 }
     }
 }

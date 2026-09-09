@@ -33,6 +33,10 @@ impl BuddyAllocator {
         }
     }
 
+    pub fn total_pages(&self) -> usize {
+        self.total_pages
+    }
+
     pub fn init(&mut self, base: PhysicalAddress, total_pages: usize) {
         self.base_page_frame_number = base.to_page_frame_number();
         self.total_pages = total_pages;
@@ -48,17 +52,26 @@ impl BuddyAllocator {
             let align_order: usize = (page_index.trailing_zeros() as usize).min(MAX_ORDER);
             let size_order: usize = (remaining.ilog2() as usize).min(MAX_ORDER);
             let order: usize = align_order.min(size_order);
+            let block_size: usize = 1 << order;
             self.push_block(page_frame_number, order);
-            page_frame_number += 1 << order;
-            remaining -= 1 << order;
+            page_frame_number += block_size;
+            remaining -= block_size;
         }
     }
 
     fn init_bitmap(&mut self) {
-        let bitmap_words: usize = Self::bitmap_words_needed(self.total_pages);
+        let mut words_per_order: [usize; MAX_ORDER + 1] = [0; MAX_ORDER + 1];
+        let mut total_words: usize = 0;
+        for order in 0..=MAX_ORDER {
+            let bits: usize = (self.total_pages >> (order + 1)).max(1);
+            let words: usize = (bits + usize::BITS as usize - 1) / usize::BITS as usize;
+            words_per_order[order] = words;
+            total_words += words;
+        }
+
         let bitmap: NonNull<usize> = unsafe {
             (*(&raw mut MEMORY_BLOCK)).alloc(
-                bitmap_words * core::mem::size_of::<usize>(),
+                total_words * core::mem::size_of::<usize>(),
                 core::mem::align_of::<usize>(),
             )
         }
@@ -66,30 +79,19 @@ impl BuddyAllocator {
         .to_virtual()
         .as_non_null::<usize>();
 
+        unsafe { core::ptr::write_bytes(bitmap.as_ptr(), 0, total_words) };
+
         let mut bitmap_offset: usize = 0;
         for order in 0..=MAX_ORDER {
-            let bits: usize = (self.total_pages >> (order + 1)).max(1);
-            let words: usize = (bits + usize::BITS as usize - 1) / usize::BITS as usize;
-            unsafe {
-                self.areas[order].map = bitmap.as_ptr().add(bitmap_offset);
-                for i in 0..words {
-                    bitmap.as_ptr().add(bitmap_offset + i).write(0);
-                }
-            }
-            bitmap_offset += words;
+            unsafe { self.areas[order].map = bitmap.as_ptr().add(bitmap_offset) };
+            bitmap_offset += words_per_order[order];
         }
-    }
-
-    fn bitmap_words_needed(total_pages: usize) -> usize {
-        let mut total: usize = 0;
-        for order in 0..=MAX_ORDER {
-            let bits: usize = (total_pages >> (order + 1)).max(1);
-            total += (bits + usize::BITS as usize - 1) / usize::BITS as usize;
-        }
-        total
     }
 
     fn push_block(&mut self, page_frame_number: usize, order: usize) {
+        let page_index: usize = page_frame_number - self.base_page_frame_number;
+        let bit_index: usize = page_index >> (order + 1);
+        self.areas[order].toggle_buddy_bit(bit_index);
         unsafe {
             let page: &mut Frame = &mut *MEM_SECTION.page_frame_number_to_page(page_frame_number);
             page.set_usage(FrameUsage::Buddy { order });
@@ -107,18 +109,21 @@ impl BuddyAllocator {
             return None;
         }
         if let Some(node) = self.areas[order].pop_front() {
-            let page_frame_number: usize = VirtualAddress::new(node.as_ptr() as usize)
-                .to_physical()
-                .to_page_frame_number();
+            let page_frame_number: usize =
+                VirtualAddress::new(node.as_ptr() as usize).to_page_frame_number();
+            let page_index: usize = page_frame_number - self.base_page_frame_number;
+            let bit_index: usize = page_index >> (order + 1);
+            self.areas[order].toggle_buddy_bit(bit_index);
             unsafe {
                 let page: &mut Frame =
                     &mut *MEM_SECTION.page_frame_number_to_page(page_frame_number);
-                page.set_usage(FrameUsage::Buddy { order: 0 });
+                page.set_usage(FrameUsage::Uninitialized);
             }
             return Some(page_frame_number);
         }
+        let block_size: usize = 1 << order;
         let parent_page_frame_number: usize = self.alloc_order(order + 1)?;
-        let buddy_page_frame_number: usize = parent_page_frame_number + (1 << order);
+        let buddy_page_frame_number: usize = parent_page_frame_number + block_size;
         self.push_block(buddy_page_frame_number, order);
         Some(parent_page_frame_number)
     }
@@ -128,19 +133,21 @@ impl BuddyAllocator {
             self.push_block(page_frame_number, order);
             return;
         }
+        let block_size: usize = 1 << order;
         let page_index: usize = page_frame_number - self.base_page_frame_number;
-        let buddy_page_index: usize = page_index ^ (1 << order);
+        let buddy_page_index: usize = page_index ^ block_size;
         let buddy_page_frame_number: usize = self.base_page_frame_number + buddy_page_index;
         let bit_index: usize = page_index >> (order + 1);
 
-        if buddy_page_frame_number < self.base_page_frame_number + self.total_pages {
-            let should_merge: bool = self.areas[order].toggle_and_test_buddy_bit(bit_index);
+        if buddy_page_frame_number + block_size <= self.base_page_frame_number + self.total_pages {
+            let should_merge: bool = self.areas[order].test_buddy_bit(bit_index);
 
             if should_merge {
                 unsafe {
                     let buddy_page: &Frame =
                         &*MEM_SECTION.page_frame_number_to_page(buddy_page_frame_number);
-                    if matches!(buddy_page.get_usage(), FrameUsage::Buddy { order: o } if *o == order) {
+                    if matches!(buddy_page.get_usage(), FrameUsage::Buddy { order: o } if *o == order)
+                    {
                         let buddy_node: NonNull<FreeBlock> = NonNull::new_unchecked(
                             PhysicalAddress::new(page_frame_number_to_physical(
                                 buddy_page_frame_number,
@@ -149,9 +156,10 @@ impl BuddyAllocator {
                             .as_usize() as *mut FreeBlock,
                         );
                         self.areas[order].remove(buddy_node);
+                        self.areas[order].toggle_buddy_bit(bit_index);
                         let buddy_page_mut: &mut Frame =
                             &mut *MEM_SECTION.page_frame_number_to_page(buddy_page_frame_number);
-                        buddy_page_mut.set_usage(FrameUsage::Buddy { order: 0 });
+                        buddy_page_mut.set_usage(FrameUsage::Uninitialized);
                         let merged_page_frame_number: usize =
                             page_frame_number.min(buddy_page_frame_number);
                         self.free_order(merged_page_frame_number, order + 1);
