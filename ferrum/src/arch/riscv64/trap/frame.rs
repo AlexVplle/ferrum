@@ -7,4 +7,6 @@ pub struct TrapFrame {
     pub scause: Scause,
     pub stval: Stval,
     pub sstatus: Sstatus,
+    pub float_registers: [u64; 32],
+    pub float_csr: u32,
 }

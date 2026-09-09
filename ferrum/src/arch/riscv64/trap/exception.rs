@@ -36,13 +36,8 @@ impl Exception {
             Exception::Unknown(_) => "unknown exception",
         };
 
-        sbi::debug_console::print("[trap] unhandled exception: ");
-        sbi::debug_console::print(name);
-        sbi::debug_console::print("\n[trap] sepc:  0x");
-        sbi::debug_console::print_hex(frame.sepc.bits());
-        sbi::debug_console::print("\n[trap] stval: 0x");
-        sbi::debug_console::print_hex(frame.stval.bits());
-        sbi::debug_console::print("\n");
+        crate::printkln!("[trap] unhandled exception: {} sepc={:#x} stval={:#x}",
+            name, frame.sepc.bits(), frame.stval.bits());
 
         loop {}
     }
