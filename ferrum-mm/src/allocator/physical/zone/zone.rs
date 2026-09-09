@@ -11,7 +11,7 @@ impl Zone {
         }
     }
 
-    pub fn present_pages(&self) -> usize {
-        self.buddy.total_pages()
+    pub fn init(&mut self, base: crate::physical_address::PhysicalAddress, num_pages: usize) {
+        self.buddy.init(base, num_pages);
     }
 }

@@ -14,15 +14,15 @@ impl KmallocAllocator {
     pub const fn new() -> Self {
         Self {
             caches: [
-                SlubCache::new(SIZE_CLASSES[0]),
-                SlubCache::new(SIZE_CLASSES[1]),
-                SlubCache::new(SIZE_CLASSES[2]),
-                SlubCache::new(SIZE_CLASSES[3]),
-                SlubCache::new(SIZE_CLASSES[4]),
-                SlubCache::new(SIZE_CLASSES[5]),
-                SlubCache::new(SIZE_CLASSES[6]),
-                SlubCache::new(SIZE_CLASSES[7]),
-                SlubCache::new(SIZE_CLASSES[8]),
+                SlubCache::new("kmalloc-16", SIZE_CLASSES[0]),
+                SlubCache::new("kmalloc-32", SIZE_CLASSES[1]),
+                SlubCache::new("kmalloc-64", SIZE_CLASSES[2]),
+                SlubCache::new("kmalloc-128", SIZE_CLASSES[3]),
+                SlubCache::new("kmalloc-256", SIZE_CLASSES[4]),
+                SlubCache::new("kmalloc-512", SIZE_CLASSES[5]),
+                SlubCache::new("kmalloc-1024", SIZE_CLASSES[6]),
+                SlubCache::new("kmalloc-2048", SIZE_CLASSES[7]),
+                SlubCache::new("kmalloc-4096", SIZE_CLASSES[8]),
             ],
         }
     }

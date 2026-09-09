@@ -23,6 +23,8 @@ pub const VIRTUAL_PAGE_NUMBER_MASK: usize = 0x1FF;
 
 pub const TLB_FLUSH_ALL_THRESHOLD: usize = 64;
 pub const DIRECT_MEMORY_ACCESS_ZONE_END: Option<usize> = None;
+pub const MAX_HARTS: usize = 8;
 
 pub mod fixmap;
+pub mod numa;
 pub mod paging;
