@@ -1,18 +1,17 @@
-use crate::memory_management::memory_region::MemoryRegion;
-use crate::memory_management::memory_region_flags::MemoryRegionFlags;
+use super::memory_block_region::constants::MAX_REGIONS;
+use super::memory_block_region::MemoryBlockRegion;
+use super::memory_block_region::MemoryBlockRegionFlags;
 use crate::memory_management::physical_address::PhysicalAddress;
 
-const MAX_REGIONS: usize = 128;
-
-const EMPTY_REGION: MemoryRegion = MemoryRegion {
-    base: unsafe { PhysicalAddress::new_unchecked(0) },
+const EMPTY_REGION: MemoryBlockRegion = MemoryBlockRegion {
+    base: PhysicalAddress::new(0),
     size: 0,
-    flags: MemoryRegionFlags::new(),
+    flags: MemoryBlockRegionFlags::new(),
     node_id: 0,
 };
 
 pub struct MemoryBlockType {
-    regions: [MemoryRegion; MAX_REGIONS],
+    regions: [MemoryBlockRegion; MAX_REGIONS],
     count: usize,
 }
 
@@ -24,14 +23,14 @@ impl MemoryBlockType {
         }
     }
 
-    pub fn add(&mut self, region: MemoryRegion) {
+    pub fn add(&mut self, region: MemoryBlockRegion) {
         if self.count < MAX_REGIONS {
             self.regions[self.count] = region;
             self.count += 1;
         }
     }
 
-    pub fn regions(&self) -> &[MemoryRegion] {
+    pub fn regions(&self) -> &[MemoryBlockRegion] {
         &self.regions[..self.count]
     }
 

@@ -1,9 +1,9 @@
 use ferrum_macros::flag;
 
 #[derive(Clone, Copy)]
-pub struct MemoryRegionFlags(usize);
+pub struct MemoryBlockRegionFlags(usize);
 
-impl MemoryRegionFlags {
+impl MemoryBlockRegionFlags {
     pub const fn new() -> Self {
         Self(0)
     }
