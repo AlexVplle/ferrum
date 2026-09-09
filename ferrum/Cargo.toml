@@ -5,7 +5,9 @@ edition = "2024"
 
 [dependencies]
 sbi = { path = "../../sbi" }
+ferrum-core = { path = "../ferrum-core" }
 ferrum-macros = { path = "../ferrum-macros" }
+ferrum-mm = { path = "../ferrum-mm" }
 fdt = "0.1.5"
 
 [[bin]]
