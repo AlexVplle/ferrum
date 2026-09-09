@@ -2,5 +2,6 @@
 
 pub mod linked_list;
 pub mod notifier;
+pub mod per_cpu;
 pub mod singleton;
-pub mod spinlock;
+pub use spinlock;

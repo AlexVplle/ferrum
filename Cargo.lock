@@ -84,6 +84,7 @@ dependencies = [
  "ferrum-core",
  "ferrum-macros",
  "ferrum-mm",
+ "ferrum-process",
  "sbi",
 ]
 
@@ -93,6 +94,7 @@ version = "0.1.0"
 dependencies = [
  "loom",
  "proptest",
+ "spinlock",
 ]
 
 [[package]]
@@ -112,6 +114,15 @@ dependencies = [
  "ferrum-core",
  "ferrum-macros",
  "proptest",
+]
+
+[[package]]
+name = "ferrum-process"
+version = "0.1.0"
+dependencies = [
+ "ferrum-core",
+ "ferrum-macros",
+ "ferrum-mm",
 ]
 
 [[package]]
@@ -426,6 +437,11 @@ name = "smallvec"
 version = "1.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ed6a63f02c8539c91a8685a86f4099661ba3da017932f6ebbea6de3f0fa7c90"
+
+[[package]]
+name = "spinlock"
+version = "0.1.0"
+source = "git+https://github.com/AlexVplle/spinlock#72cb4e2898369b5d2c128bc8be8169421d79db45"
 
 [[package]]
 name = "syn"
