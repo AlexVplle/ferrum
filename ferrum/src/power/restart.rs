@@ -2,7 +2,7 @@ use core::ptr;
 
 use ferrum_core::notifier::AtomicNotifierChain;
 
-use crate::reboot::mode::RebootMode;
+use crate::power::reboot::mode::RebootMode;
 
 pub static RESTART_HANDLER_LIST: AtomicNotifierChain = AtomicNotifierChain::new();
 

@@ -5,9 +5,7 @@
 mod arch;
 mod die;
 mod elf;
-mod reboot;
-mod restart;
-mod shutdown;
+mod power;
 mod panic;
 mod print;
 mod process;
