@@ -2,6 +2,12 @@
 #![no_main]
 #![feature(ptr_alignment_type)]
 
+extern crate alloc;
+
+#[global_allocator]
+static ALLOCATOR: ferrum_mm::allocator::heap::kmalloc::KmallocAllocator =
+    ferrum_mm::allocator::heap::kmalloc::KmallocAllocator::new();
+
 mod arch;
 mod die;
 mod elf;

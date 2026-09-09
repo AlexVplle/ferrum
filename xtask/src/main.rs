@@ -72,7 +72,7 @@ fn build(debug: bool) {
         "--target",
         "ferrum/riscv64-ferrum.json",
         "-Z",
-        "build-std=core,compiler_builtins",
+        "build-std=core,alloc,compiler_builtins",
         "-Z",
         "build-std-features=compiler-builtins-mem",
         "-Z",
