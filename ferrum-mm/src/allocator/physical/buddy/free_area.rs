@@ -28,11 +28,11 @@ impl FreeArea {
         self.list.pop_front()
     }
 
-    pub unsafe fn remove(&mut self, node: NonNull<FreeBlock>) {
+    pub fn remove(&mut self, node: NonNull<FreeBlock>) {
         unsafe { self.list.remove(node) };
     }
 
-    pub unsafe fn toggle_and_test_buddy_bit(&mut self, bit_index: usize) -> bool {
+    pub fn toggle_and_test_buddy_bit(&mut self, bit_index: usize) -> bool {
         let word_index: usize = bit_index / usize::BITS as usize;
         let bit_offset: usize = bit_index % usize::BITS as usize;
         unsafe {
