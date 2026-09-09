@@ -8,7 +8,14 @@ pub enum Interrupt {
 impl Interrupt {
     pub fn handle(&self) {
         match self {
-            Interrupt::SupervisorSoftware => {}
+            Interrupt::SupervisorSoftware => {
+                crate::arch::riscv64::csr::Sip::clear_bits(
+                    crate::arch::riscv64::csr::sip::SUPERVISOR_SOFTWARE_INTERRUPT_PENDING,
+                );
+                let hart_id: usize = crate::process::ThreadControlBlock::hart_id();
+                crate::arch::riscv64::smp::INTER_PROCESSOR_INTERRUPT_CONTROLLER
+                    .handle_inter_processor_interrupt(hart_id);
+            }
             Interrupt::SupervisorTimer => {
                 crate::timer::on_tick();
             }

@@ -1,5 +1,9 @@
 use ferrum_macros::flag;
 
+pub const SUPERVISOR_SOFTWARE_INTERRUPT_ENABLE: usize = 1 << 1;
+pub const SUPERVISOR_TIMER_INTERRUPT_ENABLE: usize = 1 << 5;
+pub const SUPERVISOR_EXTERNAL_INTERRUPT_ENABLE: usize = 1 << 9;
+
 csr!(Sie, 0x222, 0x104);
 
 impl Sie {
