@@ -15,7 +15,6 @@ pub mod riscv64;
 
 #[cfg(target_arch = "riscv64")]
 pub use riscv64::{
-    console_write,
     context::Context,
     current_thread_pointer,
     halt,

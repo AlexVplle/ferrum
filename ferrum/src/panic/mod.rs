@@ -12,13 +12,13 @@ pub static PANIC_TIMEOUT: AtomicIsize = AtomicIsize::new(0);
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     match info.location() {
-        Some(location) => crate::printkln!(
+        Some(location) => ferrum_core::printkln!(
             "[panic] at {}:{}: {}",
             location.file(),
             location.line(),
             info.message()
         ),
-        None => crate::printkln!("[panic] {}", info.message()),
+        None => ferrum_core::printkln!("[panic] {}", info.message()),
     }
 
     PANIC_NOTIFIER_HEAD.call_chain(events::PANIC, ptr::null());

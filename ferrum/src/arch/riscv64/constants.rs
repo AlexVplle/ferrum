@@ -1,2 +1,2 @@
 pub const R_RISCV_RELATIVE: u32 = 3;
-pub const MAX_HARTS: usize = 8;
+pub use ferrum_mm::arch::MAX_HARTS;

@@ -36,7 +36,7 @@ impl Exception {
             Exception::Unknown(_) => "unknown exception",
         };
 
-        crate::printkln!("[trap] unhandled exception: {} sepc={:#x} stval={:#x}",
+        ferrum_core::printkln!("[trap] unhandled exception: {} sepc={:#x} stval={:#x}",
             name, frame.sepc.bits(), frame.stval.bits());
 
         crate::die::die();

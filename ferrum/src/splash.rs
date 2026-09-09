@@ -1,5 +1,5 @@
 pub fn print() {
-    crate::printkln!(r"
+    ferrum_core::printkln!(r"
   _____ _____ ____  ____  _   _ __  __
  |  ___| ____|  _ \|  _ \| | | |  \/  |
  | |_  |  _| | |_) | |_) | | | | |\/| |

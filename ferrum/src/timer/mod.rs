@@ -1,7 +1,6 @@
 mod constants;
 
 use constants::TICK_INTERVAL_S;
-use crate::printkln;
 
 use crate::arch::{PLATFORM_TIMER, Timer};
 
@@ -11,7 +10,7 @@ fn tick_interval() -> usize {
 
 pub fn init() {
     PLATFORM_TIMER.init();
-    printkln!("[timer] clock frequency: {} Hz", PLATFORM_TIMER.clock_frequency());
+    ferrum_core::printkln!("[timer] clock frequency: {} Hz", PLATFORM_TIMER.clock_frequency());
     schedule_next_tick();
 }
 
@@ -21,6 +20,6 @@ pub fn schedule_next_tick() {
 }
 
 pub fn on_tick() {
-    printkln!("[timer] tick at t={}", PLATFORM_TIMER.current_time());
+    ferrum_core::printkln!("[timer] tick at t={}", PLATFORM_TIMER.current_time());
     schedule_next_tick();
 }

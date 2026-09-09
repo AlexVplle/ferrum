@@ -136,9 +136,9 @@ _exit_user:
     sret
 "#,
     trap_frame_size = const frame::TRAP_FRAME_SIZE,
-    kernel_stack_pointer_offset = const crate::process::KERNEL_STACK_POINTER_OFFSET,
-    user_stack_pointer_offset = const crate::process::USER_STACK_POINTER_OFFSET,
-    user_thread_pointer_offset = const crate::process::USER_THREAD_POINTER_OFFSET,
+    kernel_stack_pointer_offset = const ferrum_process::KERNEL_STACK_POINTER_OFFSET,
+    user_stack_pointer_offset = const ferrum_process::USER_STACK_POINTER_OFFSET,
+    user_thread_pointer_offset = const ferrum_process::USER_THREAD_POINTER_OFFSET,
     register_size = const core::mem::size_of::<usize>(),
     sepc_frame_slot = const frame::SEPC_FRAME_SLOT,
     scause_frame_slot = const frame::SCAUSE_FRAME_SLOT,

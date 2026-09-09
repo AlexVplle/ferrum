@@ -12,9 +12,9 @@ impl Interrupt {
                 crate::arch::riscv64::csr::Sip::clear_bits(
                     crate::arch::riscv64::csr::sip::SUPERVISOR_SOFTWARE_INTERRUPT_PENDING,
                 );
-                let hart_id: usize = crate::process::ThreadControlBlock::hart_id();
+                let processor_id: usize = ferrum_core::arch::current_processor_id();
                 crate::arch::riscv64::smp::INTER_PROCESSOR_INTERRUPT_CONTROLLER
-                    .handle_inter_processor_interrupt(hart_id);
+                    .handle_inter_processor_interrupt(processor_id);
             }
             Interrupt::SupervisorTimer => {
                 crate::timer::on_tick();

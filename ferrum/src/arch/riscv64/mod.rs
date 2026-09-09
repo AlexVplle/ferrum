@@ -52,10 +52,6 @@ pub fn wait_seconds(n: usize) {
     }
 }
 
-pub fn console_write(args: core::fmt::Arguments) {
-    use core::fmt::Write;
-    sbi::debug_console::DebugConsoleWriter.write_fmt(args).ok();
-}
 
 core::arch::global_asm!(
     ".section .text.boot,\"ax\"",
@@ -74,7 +70,7 @@ core::arch::global_asm!(
     ".Lhalt:",
     "wfi",
     "j .Lhalt",
-    stack_size = const crate::process::KERNEL_STACK_SIZE,
+    stack_size = const ferrum_process::KERNEL_STACK_SIZE,
 );
 
 #[unsafe(no_mangle)]
@@ -127,10 +123,10 @@ extern "C" fn virtual_entry(hartid: u64, fdt_address: u64) -> ! {
         ferrum_mm::arch::fixmap::init();
         ferrum_mm::arch::fixmap::map_fdt(ferrum_mm::PhysicalAddress::new(fdt_address as usize));
     }
-    crate::process::ThreadControlBlock::current().set_hart_id(hartid as usize);
+    ferrum_process::ThreadControlBlock::current().set_processor_id(hartid as usize);
     csr::Sie::set_bits(csr::sie::SUPERVISOR_SOFTWARE_INTERRUPT_ENABLE);
     platform_info::PlatformInfo::init();
-    crate::smp::CPU_ONLINE_MASK.set(hartid as usize);
-    crate::process::init();
+    crate::smp::CPU_STATES.cpu_set(hartid as usize, crate::smp::CpuState::Online);
+    ferrum_process::init();
     crate::kernel_main();
 }

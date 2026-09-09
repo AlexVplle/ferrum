@@ -26,7 +26,7 @@ fn base() -> usize {
 }
 
 fn context() -> usize {
-    crate::process::ThreadControlBlock::hart_id() * 2 + 1
+    ferrum_core::arch::current_processor_id() * 2 + 1
 }
 
 pub fn set_source_priority(source: usize, priority: u32) {
