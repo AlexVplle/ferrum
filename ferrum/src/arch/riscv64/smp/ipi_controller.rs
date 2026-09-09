@@ -21,54 +21,54 @@ impl InterProcessorInterruptController {
         }
     }
 
-    fn send_sbi_ipi(hart_id: usize) {
+    fn send_sbi_inter_processor_interrupt(hart_id: usize) {
         let mask: sbi::hart_mask::HartMask = sbi::hart_mask::HartMask::new(0).with_hart(hart_id);
         sbi::ipi::send_ipi(&mask);
     }
 
     pub fn send_reschedule(&self, hart_id: usize) {
         self.states[hart_id].set_pending(InterProcessorInterruptMessage::Reschedule);
-        Self::send_sbi_ipi(hart_id);
+        Self::send_sbi_inter_processor_interrupt(hart_id);
     }
 
     pub fn send_call_func(&self, hart_id: usize, data: NonNull<CallSingleData>) {
         self.states[hart_id].enqueue_call(data);
         self.states[hart_id].set_pending(InterProcessorInterruptMessage::CallFunc);
-        Self::send_sbi_ipi(hart_id);
+        Self::send_sbi_inter_processor_interrupt(hart_id);
     }
 
     pub fn send_cpu_stop(&self, hart_id: usize) {
         self.states[hart_id].set_pending(InterProcessorInterruptMessage::CpuStop);
-        Self::send_sbi_ipi(hart_id);
+        Self::send_sbi_inter_processor_interrupt(hart_id);
     }
 
     pub fn send_cpu_crash_stop(&self, hart_id: usize) {
         self.states[hart_id].set_pending(InterProcessorInterruptMessage::CpuCrashStop);
-        Self::send_sbi_ipi(hart_id);
+        Self::send_sbi_inter_processor_interrupt(hart_id);
     }
 
     pub fn send_irq_work(&self, hart_id: usize, work: NonNull<IrqWork>) {
         self.states[hart_id].enqueue_irq_work(work);
         self.states[hart_id].set_pending(InterProcessorInterruptMessage::IrqWork);
-        Self::send_sbi_ipi(hart_id);
+        Self::send_sbi_inter_processor_interrupt(hart_id);
     }
 
     pub fn send_timer(&self, hart_id: usize) {
         self.states[hart_id].set_pending(InterProcessorInterruptMessage::Timer);
-        Self::send_sbi_ipi(hart_id);
+        Self::send_sbi_inter_processor_interrupt(hart_id);
     }
 
     pub fn send_cpu_backtrace(&self, hart_id: usize) {
         self.states[hart_id].set_pending(InterProcessorInterruptMessage::CpuBacktrace);
-        Self::send_sbi_ipi(hart_id);
+        Self::send_sbi_inter_processor_interrupt(hart_id);
     }
 
     pub fn send_kgdb_roundup(&self, hart_id: usize) {
         self.states[hart_id].set_pending(InterProcessorInterruptMessage::KgdbRoundup);
-        Self::send_sbi_ipi(hart_id);
+        Self::send_sbi_inter_processor_interrupt(hart_id);
     }
 
-    pub fn handle_ipi(&self, hart_id: usize) {
+    pub fn handle_inter_processor_interrupt(&self, hart_id: usize) {
         let state: &HartInterProcessorInterruptState = &self.states[hart_id];
         let mut remaining: usize = state.take_pending();
 
