@@ -1,8 +1,13 @@
+pub enum BlockedKind {
+    Interruptible,
+    Uninterruptible,
+}
+
 pub enum ProcessState {
     Created,
     Waiting,
     Running,
-    Blocked,
+    Blocked(BlockedKind),
     Terminated,
     SwappedOutAndReady,
     SwappedOutAndBlocked,
