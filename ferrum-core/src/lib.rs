@@ -2,4 +2,5 @@
 
 pub mod linked_list;
 pub mod notifier;
+pub mod singleton;
 pub mod spinlock;
