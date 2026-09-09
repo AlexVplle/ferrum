@@ -41,6 +41,8 @@ Like every good thing that exists, it must run Doom.
 - [ ] kmalloc
 - [ ] Memory shrinker
 - [ ] Watermarks (WMARK_MIN/LOW/HIGH + kswapd)
+- [ ] Memory compaction
+- [ ] ZONE_MOVABLE
 - [ ] Virtual memory areas (mm_struct + VMA)
 - [ ] Red-Black tree for VMA lookup
 - [ ] vmalloc
@@ -49,6 +51,7 @@ Like every good thing that exists, it must run Doom.
 - [ ] KASAN
 
 ### Kernel infrastructure
+- [x] Intrusive doubly-linked list with iterator traits (2026-07-25)
 - [x] Atomic notifier chain (2026-07-22)
 - [x] Panic handler (notifier chain, panic_timeout, PanicInfo) (2026-07-22)
 - [x] Die notifier chain (2026-07-22)
@@ -94,17 +97,20 @@ Like every good thing that exists, it must run Doom.
 ## Build
 
 ```sh
-cargo xtask build
+cargo xtask build [--debug]
 ```
+
+- `--debug` - build with debug info
 
 ## Run
 
 ```sh
-cargo xtask run [--memory <size>] [--window] [--gdb] [--numa <n>] [--smp <n>]
+cargo xtask run [--memory <size>] [--window] [--gdb] [--debug] [--numa <n>] [--smp <n>]
 ```
 
 - `--memory <size>` - QEMU RAM size per NUMA node (default: `128M`)
 - `--window` - display output in a window instead of serial console
 - `--gdb` - start GDB stub on port 1234
+- `--debug` - build and run with debug info
 - `--numa <n>` - emulate n NUMA nodes
 - `--smp <n>` - number of CPUs (default: 1, or equal to `--numa` count when NUMA is enabled)
