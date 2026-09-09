@@ -10,7 +10,7 @@ impl MemorySectionFlags {
 
     flag!(marked_present, 0);
     flag!(has_memory_map, 1);
-    flag!(is_online, 2);
-    flag!(is_early, 3);
+    flag!(online, 2);
+    flag!(early, 3);
     flag!(taint_zone_device, 4);
 }

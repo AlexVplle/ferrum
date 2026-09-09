@@ -44,8 +44,8 @@ pub fn memmap_init() {
             section.set_memory_map(section_memory_map);
             section.flags.set_marked_present();
             section.flags.set_has_memory_map();
-            section.flags.set_is_online();
-            section.flags.set_is_early();
+            section.flags.set_online();
+            section.flags.set_early();
 
             let pages_per_subsection: usize = PAGES_PER_SECTION / SUBSECTIONS_PER_SECTION;
             for subsection in 0..SUBSECTIONS_PER_SECTION {

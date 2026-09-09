@@ -84,6 +84,13 @@ impl MemorySectionTable {
         self[section_number].valid_section()
     }
 
+    pub fn online_section_nr(&self, section_number: usize) -> bool {
+        if !self.is_root_allocated(section_number >> SECTIONS_PER_ROOT_BITS) {
+            return false;
+        }
+        self[section_number].online_section()
+    }
+
     pub fn present_section_nr(&self, section_number: usize) -> bool {
         if !self.is_root_allocated(section_number >> SECTIONS_PER_ROOT_BITS) {
             return false;
