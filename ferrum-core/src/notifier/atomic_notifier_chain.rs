@@ -1,6 +1,5 @@
 use core::ptr::NonNull;
 
-use crate::linked_list::link::Link;
 use crate::linked_list::list::List;
 use crate::spinlock::{Spinlock, SpinlockGuard};
 
@@ -33,15 +32,11 @@ impl AtomicNotifierChain {
 
     pub fn call_chain(&self, event: usize, data: *const ()) -> NotifierResult {
         let guard: SpinlockGuard<'_, List<NotifierBlock>> = self.chain.lock();
-        let mut cursor: Link<NotifierBlock> = guard.front();
-        while let Some(block_ptr) = cursor {
-            let block: &NotifierBlock = unsafe { block_ptr.as_ref() };
-            let next: Link<NotifierBlock> = block.links.next();
+        for block in &*guard {
             let result: NotifierResult = (block.notifier_call)(block, event, data);
             if result.should_stop() {
                 return result;
             }
-            cursor = next;
         }
         NotifierResult::Done
     }

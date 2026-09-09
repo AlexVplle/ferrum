@@ -1,5 +1,6 @@
 use core::ptr::NonNull;
 
+use super::iter::Iter;
 use super::link::Link;
 use super::linked::Linked;
 use super::links::Links;
@@ -27,6 +28,10 @@ impl<T: Linked<Links<T>>> List<T> {
 
     pub fn len(&self) -> usize {
         self.len
+    }
+
+    pub fn iter(&self) -> Iter<'_, T> {
+        Iter::new(self.head, self.tail, self.len)
     }
 
     pub fn front(&self) -> Link<T> {
@@ -147,6 +152,31 @@ impl<T: Linked<Links<T>>> List<T> {
             None => self.tail = prev,
         }
         self.len -= 1;
+    }
+}
+
+impl<T: Linked<Links<T>>> FromIterator<NonNull<T>> for List<T> {
+    fn from_iter<I: IntoIterator<Item = NonNull<T>>>(iter: I) -> Self {
+        let mut list: List<T> = List::new();
+        list.extend(iter);
+        list
+    }
+}
+
+impl<T: Linked<Links<T>>> Extend<NonNull<T>> for List<T> {
+    fn extend<I: IntoIterator<Item = NonNull<T>>>(&mut self, iter: I) {
+        for ptr in iter {
+            self.push_back(ptr);
+        }
+    }
+}
+
+impl<'a, T: Linked<Links<T>>> IntoIterator for &'a List<T> {
+    type Item = &'a T;
+    type IntoIter = Iter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }
 
