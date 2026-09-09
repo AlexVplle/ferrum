@@ -7,19 +7,17 @@ macro_rules! csr {
         #[repr(C)]
         $(#[$doc])*
         #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-        pub struct $ty {
-            bits: usize,
-        }
+        pub struct $ty(usize);
 
         impl $ty {
             pub const BITMASK: usize = $mask;
 
             pub const fn from_bits(bits: usize) -> Self {
-                Self { bits: bits & $mask }
+                Self(bits & $mask)
             }
 
             pub const fn bits(&self) -> usize {
-                self.bits & $mask
+                self.0 & $mask
             }
 
             pub const fn bitmask(&self) -> usize {
@@ -35,6 +33,33 @@ macro_rules! csr {
                     );
                 }
                 Self::from_bits(bits)
+            }
+
+            pub fn write(value: Self) {
+                unsafe {
+                    core::arch::asm!(
+                        concat!("csrw ", stringify!($csr_number), ", {0}"),
+                        in(reg) value.0,
+                    );
+                }
+            }
+
+            pub fn set_bits(mask: usize) {
+                unsafe {
+                    core::arch::asm!(
+                        concat!("csrs ", stringify!($csr_number), ", {0}"),
+                        in(reg) mask,
+                    );
+                }
+            }
+
+            pub fn clear_bits(mask: usize) {
+                unsafe {
+                    core::arch::asm!(
+                        concat!("csrc ", stringify!($csr_number), ", {0}"),
+                        in(reg) mask,
+                    );
+                }
             }
         }
     };
