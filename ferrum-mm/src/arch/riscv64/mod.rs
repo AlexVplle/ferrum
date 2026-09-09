@@ -22,6 +22,7 @@ pub const PHYSICAL_PAGE_NUMBER_MASK: usize = 0x003FFFFFFFFFFC00;
 pub const VIRTUAL_PAGE_NUMBER_MASK: usize = 0x1FF;
 
 pub const TLB_FLUSH_ALL_THRESHOLD: usize = 64;
+pub const DIRECT_MEMORY_ACCESS_ZONE_END: Option<usize> = None;
 
 pub mod fixmap;
 pub mod paging;

@@ -1,11 +1,10 @@
 pub mod allocator;
 pub mod constants;
+pub mod memory_node;
+pub mod zone;
+pub mod zone_list;
+pub mod zone_ref;
+pub mod zone_type;
 
-pub use constants::DIRECT_MEMORY_ACCESS_ZONE_END;
-
-#[derive(Clone, Copy)]
-pub enum Zone {
-    DirectMemoryAccess,
-    Normal,
-    Device,
-}
+pub use constants::{MAX_NODES, MAX_ZONELIST_ENTRIES, MAX_ZONELISTS, NR_ZONES};
+pub use zone_type::ZoneType;
