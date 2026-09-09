@@ -3,7 +3,9 @@
 #![feature(ptr_alignment_type)]
 
 mod arch;
+mod die;
 mod elf;
+mod reboot;
 mod panic;
 mod print;
 mod process;
