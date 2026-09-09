@@ -26,11 +26,11 @@ pub fn memory_block_init(kernel_physical_start: PhysicalAddress, kernel_size: us
             let Some(size) = region.size else {
                 continue;
             };
-            let node_id: u32 = node
+            let node_id: usize = node
                 .property("numa-node-id")
                 .and_then(|p: fdt::node::NodeProperty<'_>| p.value.try_into().ok())
                 .map(u32::from_be_bytes)
-                .unwrap_or(0);
+                .unwrap_or(0) as usize;
             (*memory_block).add_memory(MemoryBlockRegion {
                 base: PhysicalAddress::new(region.starting_address as usize),
                 size,

@@ -1,27 +1,27 @@
 use core::ptr::NonNull;
-use core::sync::atomic::AtomicU32;
+use core::sync::atomic::AtomicUsize;
 
 use super::frame_usage::FrameUsage;
+use crate::allocator::physical::zone::ZoneType;
 use ferrum_core::linked_list::linked::Linked;
 use ferrum_core::linked_list::links::Links;
-use crate::allocator::physical::zone::Zone;
 
 pub struct Frame {
     pub links: Links<Frame>,
-    pub zone: Zone,
-    pub node: u32,
+    pub zone: ZoneType,
+    pub node: usize,
     usage: FrameUsage,
-    pub ref_count: AtomicU32,
+    pub ref_count: AtomicUsize,
 }
 
 impl Frame {
     pub const fn empty() -> Self {
         Self {
             links: Links::new(),
-            zone: Zone::Normal,
+            zone: ZoneType::Normal,
             node: 0,
             usage: FrameUsage::new(),
-            ref_count: AtomicU32::new(0),
+            ref_count: AtomicUsize::new(0),
         }
     }
 
@@ -37,11 +37,11 @@ impl Frame {
         self.usage = usage;
     }
 
-    pub fn set_zone(&mut self, zone: Zone) {
+    pub fn set_zone(&mut self, zone: ZoneType) {
         self.zone = zone;
     }
 
-    pub fn set_node(&mut self, node_id: u32) {
+    pub fn set_node(&mut self, node_id: usize) {
         self.node = node_id;
     }
 }
@@ -49,8 +49,12 @@ impl Frame {
 unsafe impl Linked<Links<Frame>> for Frame {
     type Handle = NonNull<Frame>;
 
-    fn into_ptr(handle: NonNull<Frame>) -> NonNull<Frame> { handle }
-    fn from_ptr(ptr: NonNull<Frame>) -> NonNull<Frame> { ptr }
+    fn into_ptr(handle: NonNull<Frame>) -> NonNull<Frame> {
+        handle
+    }
+    fn from_ptr(ptr: NonNull<Frame>) -> NonNull<Frame> {
+        ptr
+    }
     fn links(ptr: NonNull<Frame>) -> NonNull<Links<Frame>> {
         unsafe { NonNull::new_unchecked(&raw mut (*ptr.as_ptr()).links) }
     }

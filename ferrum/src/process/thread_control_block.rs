@@ -1,5 +1,5 @@
 use core::ptr::NonNull;
-use core::sync::atomic::AtomicU32;
+use core::sync::atomic::AtomicUsize;
 
 use super::flags::ProcessFlags;
 use super::kernel_stack::KernelStack;
@@ -11,7 +11,7 @@ use ferrum_core::linked_list::links::Links;
 pub(super) struct ThreadControlBlock {
     pub(super) run_list: Links<ThreadControlBlock>,
     identifier: u64,
-    usage: AtomicU32,
+    usage: AtomicUsize,
     flags: ProcessFlags,
     context: Context,
     kernel_stack: *mut KernelStack,
@@ -39,7 +39,7 @@ static mut INIT_KERNEL_STACK: KernelStack = KernelStack::new();
 pub(super) static mut INIT_THREAD: ThreadControlBlock = ThreadControlBlock {
     run_list: Links::new(),
     identifier: 0,
-    usage: AtomicU32::new(1),
+    usage: AtomicUsize::new(1),
     flags: ProcessFlags::new(),
     context: Context {
         stack_pointer: 0,

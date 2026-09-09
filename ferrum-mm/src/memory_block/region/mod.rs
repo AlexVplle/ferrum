@@ -10,7 +10,7 @@ pub struct MemoryBlockRegion {
     pub base: PhysicalAddress,
     pub size: usize,
     pub flags: MemoryBlockRegionFlags,
-    pub node_id: u32,
+    pub node_id: usize,
 }
 
 impl MemoryBlockRegion {
@@ -19,7 +19,7 @@ impl MemoryBlockRegion {
             base: PhysicalAddress::new(0),
             size: 0,
             flags: MemoryBlockRegionFlags::new(),
-            node_id: 0,
+            node_id: 0_usize,
         }
     }
 }
