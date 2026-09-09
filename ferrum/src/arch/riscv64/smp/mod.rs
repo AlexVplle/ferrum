@@ -1,9 +1,12 @@
 mod call_single_data;
 mod hart_ipi_state;
+mod ipi_controller;
 mod ipi_message;
 mod irq_work;
 
-pub mod ipi;
-
 pub use call_single_data::{CallSingleData, SmpCallFunc, SmpCondFunc};
+pub use ipi_controller::InterProcessorInterruptController;
 pub use irq_work::{IrqWork, IrqWorkFunc};
+
+pub static IPI_CONTROLLER: InterProcessorInterruptController =
+    InterProcessorInterruptController::new();

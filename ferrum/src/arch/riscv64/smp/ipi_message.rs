@@ -1,5 +1,5 @@
 #[derive(Clone, Copy)]
-pub enum IpiMessage {
+pub enum InterProcessorInterruptMessage {
     Reschedule = 0,
     CallFunc = 1,
     CpuStop = 2,
@@ -10,7 +10,7 @@ pub enum IpiMessage {
     KgdbRoundup = 7,
 }
 
-impl IpiMessage {
+impl InterProcessorInterruptMessage {
     pub const fn bit(self) -> usize {
         1 << (self as usize)
     }

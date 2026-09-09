@@ -4,16 +4,16 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 use ferrum_core::linked_list::llist::{Llist, LlistNode};
 
 use super::call_single_data::CallSingleData;
-use super::ipi_message::IpiMessage;
+use super::ipi_message::InterProcessorInterruptMessage;
 use super::irq_work::IrqWork;
 
-pub struct HartIpiState {
+pub struct HartInterProcessorInterruptState {
     pending: AtomicUsize,
     pub call_single_queue: Llist,
     pub irq_work_queue: Llist,
 }
 
-impl HartIpiState {
+impl HartInterProcessorInterruptState {
     pub const fn new() -> Self {
         Self {
             pending: AtomicUsize::new(0),
@@ -22,7 +22,7 @@ impl HartIpiState {
         }
     }
 
-    pub fn set_pending(&self, msg: IpiMessage) {
+    pub fn set_pending(&self, msg: InterProcessorInterruptMessage) {
         self.pending.fetch_or(msg.bit(), Ordering::Release);
     }
 
