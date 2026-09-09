@@ -10,6 +10,25 @@ pub mod relocate;
 pub mod timer;
 pub mod trap;
 
+pub fn halt() -> ! {
+    loop {
+        unsafe { core::arch::asm!("wfi") };
+    }
+}
+
+pub fn machine_restart(cold: bool) -> ! {
+    let reset_type: u32 = if cold {
+        sbi::srst::reset_type::COLD_REBOOT
+    } else {
+        sbi::srst::reset_type::WARM_REBOOT
+    };
+    sbi::srst::system_reset(reset_type, sbi::srst::reset_reason::NO_REASON);
+}
+
+pub fn machine_power_off() -> ! {
+    sbi::srst::system_reset(sbi::srst::reset_type::SHUTDOWN, sbi::srst::reset_reason::NO_REASON);
+}
+
 pub fn console_write(args: core::fmt::Arguments) {
     use core::fmt::Write;
     sbi::debug_console::DebugConsoleWriter.write_fmt(args).ok();

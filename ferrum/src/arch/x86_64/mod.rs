@@ -1,5 +1,23 @@
 pub mod constants;
 
+pub fn halt() -> ! {
+    loop {
+        unsafe { core::arch::asm!("hlt") };
+    }
+}
+
+pub fn machine_restart(_cold: bool) -> ! {
+    loop {
+        unsafe { core::arch::asm!("hlt") };
+    }
+}
+
+pub fn machine_power_off() -> ! {
+    loop {
+        unsafe { core::arch::asm!("hlt") };
+    }
+}
+
 use crate::boot_info::{BootInfo, Framebuffer};
 use crate::limine::framebuffer::framebuffer::LimineFramebuffer;
 use crate::limine::framebuffer::request::FRAMEBUFFER_REQUEST;
