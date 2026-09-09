@@ -6,8 +6,8 @@ use constants::{
 };
 use core::sync::atomic::{AtomicUsize, Ordering};
 
-use crate::memory_management::physical_address::PhysicalAddress;
-use crate::memory_management::virtual_address::VirtualAddress;
+use ferrum_mm::PhysicalAddress;
+use ferrum_mm::VirtualAddress;
 
 use super::boot;
 

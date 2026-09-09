@@ -76,10 +76,9 @@ extern "C" fn virtual_entry(hartid: u64, fdt_address: u64) -> ! {
             options(nostack),
         );
         ferrum_mm::arch::fixmap::init();
-        ferrum_mm::arch::fixmap::map_fdt(fdt_address as usize);
+        ferrum_mm::arch::fixmap::map_fdt(ferrum_mm::PhysicalAddress::new(fdt_address as usize));
     }
     boot::store_hart_id(hartid);
-    boot::store_fdt_address(fdt_address);
     crate::process::init();
     crate::kernel_main();
 }

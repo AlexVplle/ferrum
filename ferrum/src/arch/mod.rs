@@ -15,17 +15,10 @@ pub mod riscv64;
 
 #[cfg(target_arch = "riscv64")]
 pub use riscv64::{
-    boot::{fdt_address, memory_regions, reserved_regions},
     console_write,
     context::Context,
     timer::{RiscvTimer as PlatformTimer, RISCV_TIMER as PLATFORM_TIMER},
 };
 
 #[cfg(target_arch = "riscv64")]
-pub use ferrum_mm::arch::{
-    fixmap::fdt_virtual_address,
-    paging::{
-        setup::setup_direct_map,
-        tlb::{flush_tlb_all, flush_tlb_kernel_range, flush_tlb_page},
-    },
-};
+pub use ferrum_mm::arch::fixmap::{fdt_physical_address, fdt_virtual_address};
