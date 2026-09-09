@@ -1,7 +1,8 @@
 use core::sync::atomic::{AtomicPtr, Ordering};
 
 use super::constants::{
-    NR_SECTION_ROOTS, PAGE_FRAME_NUMBER_SECTION_SHIFT, SECTIONS_PER_ROOT, SECTIONS_PER_ROOT_BITS,
+    MAX_SECTIONS, NR_SECTION_ROOTS, PAGE_FRAME_NUMBER_SECTION_SHIFT, SECTIONS_PER_ROOT,
+    SECTIONS_PER_ROOT_BITS,
 };
 use super::memory_section::MemorySection;
 use crate::memory_block::MEMORY_BLOCK;
@@ -58,6 +59,21 @@ impl MemorySectionTable {
                 .add(page_frame_number_in_section)
                 .as_ptr()
         }
+    }
+
+    pub fn page_frame_number_in_present_section(&self, page_frame_number: usize) -> bool {
+        let section_number = self.section_number_for_page_frame_number(page_frame_number);
+        if section_number >= MAX_SECTIONS {
+            return false;
+        }
+        self.present_section_nr(section_number)
+    }
+
+    pub fn present_section_nr(&self, section_number: usize) -> bool {
+        if !self.is_root_allocated(section_number >> SECTIONS_PER_ROOT_BITS) {
+            return false;
+        }
+        self[section_number].present_section()
     }
 
     pub fn page_to_page_frame_number(&self, page: *const Frame, section_number: usize) -> usize {

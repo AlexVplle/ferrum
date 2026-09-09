@@ -42,6 +42,10 @@ pub fn memmap_init() {
                 MEM_SECTION.base_page_frame_number_for_section(section_number);
             section.set_base_page_frame_number(section_base_page_frame_number);
             section.set_memory_map(section_memory_map);
+            section.flags.set_marked_present();
+            section.flags.set_has_mem_map();
+            section.flags.set_is_online();
+            section.flags.set_is_early();
 
             let pages_per_subsection = PAGES_PER_SECTION / SUBSECTIONS_PER_SECTION;
             for subsection in 0..SUBSECTIONS_PER_SECTION {
