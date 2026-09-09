@@ -1,5 +1,7 @@
-pub mod cpumask;
+pub mod cpu_state;
+pub mod cpu_states;
 
-use cpumask::AtomicCpuMask;
+pub use cpu_state::CpuState;
+pub use cpu_states::CpuStates;
 
-pub static CPU_ONLINE_MASK: AtomicCpuMask = AtomicCpuMask::new();
+pub static CPU_STATES: CpuStates = CpuStates::new();
