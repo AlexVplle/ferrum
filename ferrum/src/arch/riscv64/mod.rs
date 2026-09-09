@@ -5,15 +5,9 @@ pub mod boot;
 pub mod constants;
 pub mod context;
 pub mod csr;
-pub mod early_paging;
-pub mod fixmap;
-pub mod paging;
-pub mod page_table;
-pub mod page_table_entry;
-pub mod page_table_entry_flags;
 pub mod plic;
+pub mod relocate;
 pub mod timer;
-pub mod tlb;
 pub mod trap;
 
 pub fn console_write(args: core::fmt::Arguments) {
@@ -25,44 +19,64 @@ core::arch::global_asm!(
     ".section .text.boot,\"ax\"",
     ".global _start",
     "_start:",
-    "fence.i",
-    "csrw sie, zero",
-    "csrw sip, zero",
-    "mv s0, a0",
-    "mv s1, a1",
     "bnez a0, .Lhalt",
+    ".option push",
+    ".option nopic",
     "la sp, INIT_KERNEL_STACK + {stack_size}",
     "la tp, INIT_THREAD",
-    "call setup_virtual_memory",
-    "li t0, {physical_to_virtual_offset}",
-    "add sp, sp, t0",
-    "add tp, tp, t0",
-    "la t1, 1f",
-    "add t1, t1, t0",
-    "jr t1",
-    "1:",
-    "la t0, _trap_entry",
-    "csrw stvec, t0",
-    "mv a0, s0",
-    "mv a1, s1",
-    "call _riscv_entry",
+    ".option pop",
+    "tail physical_entry",
     ".Lhalt:",
     "wfi",
     "j .Lhalt",
     stack_size = const crate::process::KERNEL_STACK_SIZE,
-    physical_to_virtual_offset = const crate::arch::riscv64::constants::PHYSICAL_TO_VIRTUAL_OFFSET,
 );
 
 #[unsafe(no_mangle)]
-extern "C" fn _riscv_entry(hartid: u64, fdt_address: u64) -> ! {
-    if hartid != 0 {
-        loop {
-            unsafe { core::arch::asm!("wfi") };
-        }
-    }
+extern "C" fn physical_entry(hartid: usize, fdt: usize) -> ! {
     unsafe {
-        fixmap::init();
-        fixmap::map_fdt(fdt_address as usize);
+        core::arch::asm!(
+            "fence.i",
+            "csrw sie, zero",
+            "csrw sip, zero",
+            options(nostack),
+        );
+    }
+    ferrum_mm::arch::paging::early_paging::setup_virtual_memory();
+    unsafe {
+        core::arch::asm!(
+            "li t1, {offset}",
+            "add sp, sp, t1",
+            "add tp, tp, t1",
+            ".option push",
+            ".option nopic",
+            "la t0, 1f",
+            ".option pop",
+            "add t0, t0, t1",
+            "jr t0",
+            "1:",
+            "tail {entry}",
+            offset = const crate::arch::PHYSICAL_TO_VIRTUAL_OFFSET as i64,
+            in("a0") hartid,
+            in("a1") fdt,
+            entry = sym virtual_entry,
+            options(noreturn),
+        );
+    }
+}
+
+#[unsafe(no_mangle)]
+extern "C" fn virtual_entry(hartid: u64, fdt_address: u64) -> ! {
+    crate::elf::apply_relocations();
+    unsafe {
+        core::arch::asm!(
+            "la {addr}, _trap_entry",
+            "csrw stvec, {addr}",
+            addr = out(reg) _,
+            options(nostack),
+        );
+        ferrum_mm::arch::fixmap::init();
+        ferrum_mm::arch::fixmap::map_fdt(fdt_address as usize);
     }
     boot::store_hart_id(hartid);
     boot::store_fdt_address(fdt_address);

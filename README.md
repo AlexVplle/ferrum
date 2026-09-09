@@ -16,6 +16,7 @@ Like every good thing that exists, it must run Doom.
 
 ## Roadmap
 
+### Memory management
 - [x] Boot / early paging
 - [x] memblock
 - [x] memmap_init
@@ -24,20 +25,35 @@ Like every good thing that exists, it must run Doom.
 - [x] Zone allocator
 - [x] Slab allocator
 - [x] NUMA
+- [ ] kmalloc
+- [ ] free_all_to_buddy
+- [ ] Virtual memory areas (mm_struct + VMA)
+- [ ] Page fault handler
+
+### Kernel infrastructure
+- [ ] Syslog (ring buffer + log levels)
+
+### Security
+- [x] PIE
+- [ ] KASLR
+
+### Processes
 - [ ] Scheduler
 - [ ] Threads
+- [ ] SMP
 - [ ] Syscalls
 - [ ] Process isolation
 - [ ] IPC
+
+### Userspace
 - [ ] Userspace
-- [ ] Memory server
 - [ ] VFS server
 - [ ] Driver model
-- [ ] SMP
 - [ ] Doom
 
 ## Maybe
 
+- [ ] Memory server
 - [ ] Network server
 - [ ] Sockets
 

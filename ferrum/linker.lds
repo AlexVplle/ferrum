@@ -23,6 +23,16 @@ SECTIONS {
         *(.rodata .rodata.*)
     }
 
+    .rela.dyn : AT(ADDR(.rela.dyn) - KERNEL_VIRT + KERNEL_PHYS) {
+        __rela_dyn_start = .;
+        *(.rela.dyn)
+        __rela_dyn_end = .;
+    }
+
+    .got : AT(ADDR(.got) - KERNEL_VIRT + KERNEL_PHYS) {
+        *(.got .got.*)
+    }
+
     .data : AT(ADDR(.data) - KERNEL_VIRT + KERNEL_PHYS) {
         *(.data .data.*)
     }

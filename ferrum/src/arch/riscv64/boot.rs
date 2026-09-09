@@ -1,7 +1,8 @@
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use crate::memory_management::early::memory_map_entry::MemoryMapEntry;
-use crate::memory_management::physical_address::PhysicalAddress;
+use ferrum_mm::arch::fixmap::fdt_virtual_address;
+use ferrum_mm::early::memory_map_entry::MemoryMapEntry;
+use ferrum_mm::PhysicalAddress;
 
 static FDT_ADDRESS: AtomicU64 = AtomicU64::new(0);
 static HART_ID: AtomicU64 = AtomicU64::new(0);
@@ -24,7 +25,7 @@ pub fn hart_id() -> u64 {
 
 pub fn platform_level_interrupt_controller_address() -> Option<usize> {
     let address: u64 = FDT_ADDRESS.load(Ordering::Acquire);
-    let fdt: fdt::Fdt = unsafe { fdt::Fdt::from_ptr(super::fixmap::fdt_virtual_address(address as usize) as *const u8) }.ok()?;
+    let fdt: fdt::Fdt = unsafe { fdt::Fdt::from_ptr(fdt_virtual_address() as *const u8) }.ok()?;
 
     for node in fdt.all_nodes() {
         let is_plic: bool = node.compatible()
@@ -47,7 +48,7 @@ pub fn platform_level_interrupt_controller_address() -> Option<usize> {
 
 pub fn clock_frequency() -> Option<u64> {
     let address: u64 = FDT_ADDRESS.load(Ordering::Acquire);
-    let fdt: fdt::Fdt = unsafe { fdt::Fdt::from_ptr(super::fixmap::fdt_virtual_address(address as usize) as *const u8) }.ok()?;
+    let fdt: fdt::Fdt = unsafe { fdt::Fdt::from_ptr(fdt_virtual_address() as *const u8) }.ok()?;
     let node: fdt::node::FdtNode<'_, '_> = fdt.find_node("/cpus")?;
     let property: fdt::node::NodeProperty<'_> = node.property("timebase-frequency")?;
     let bytes: [u8; 4] = property.value.try_into().ok()?;
@@ -56,7 +57,7 @@ pub fn clock_frequency() -> Option<u64> {
 
 pub fn reserved_regions(buffer: &mut [MemoryMapEntry]) -> Result<usize, fdt::FdtError> {
     let address: u64 = FDT_ADDRESS.load(Ordering::Acquire);
-    let fdt: fdt::Fdt = unsafe { fdt::Fdt::from_ptr(super::fixmap::fdt_virtual_address(address as usize) as *const u8) }?;
+    let fdt: fdt::Fdt = unsafe { fdt::Fdt::from_ptr(fdt_virtual_address() as *const u8) }?;
     let mut count: usize = 0;
 
     for reservation in fdt.memory_reservations() {
@@ -80,7 +81,7 @@ pub fn reserved_regions(buffer: &mut [MemoryMapEntry]) -> Result<usize, fdt::Fdt
 
 pub fn memory_regions(buffer: &mut [MemoryMapEntry]) -> Result<usize, fdt::FdtError> {
     let address: u64 = FDT_ADDRESS.load(Ordering::Acquire);
-    let fdt: fdt::Fdt = unsafe { fdt::Fdt::from_ptr(super::fixmap::fdt_virtual_address(address as usize) as *const u8) }?;
+    let fdt: fdt::Fdt = unsafe { fdt::Fdt::from_ptr(fdt_virtual_address() as *const u8) }?;
     let mut count: usize = 0;
 
     for node in fdt.all_nodes() {

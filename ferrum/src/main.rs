@@ -3,8 +3,7 @@
 #![feature(ptr_alignment_type)]
 
 mod arch;
-mod data_structures;
-mod memory_management;
+mod elf;
 mod print;
 mod process;
 mod splash;
@@ -13,15 +12,13 @@ mod timer;
 #[cfg(target_arch = "x86_64")]
 mod limine;
 
-
-use crate::arch::{PAGE_MASK, PAGE_SIZE};
+use crate::arch::{PAGE_MASK, PAGE_SIZE, PHYSICAL_TO_VIRTUAL_OFFSET};
 use core::panic::PanicInfo;
-use data_structures::spinlock::SpinlockGuard;
-use memory_management::{
+use ferrum_mm::{
     allocator::physical::zone::allocator::ZONE_ALLOCATOR,
-    early::memory_block::{MemoryBlock, MemoryBlockRegion, MemoryBlockRegionFlags, MEMORY_BLOCK},
+    memory_block::{MemoryBlockRegion, MemoryBlockRegionFlags, MEMORY_BLOCK},
     early::memory_map_entry::MemoryMapEntry,
-    physical_address::PhysicalAddress,
+    PhysicalAddress,
 };
 
 unsafe extern "C" {
@@ -60,9 +57,10 @@ pub fn kernel_main() -> ! {
         );
     }
 
-    let kernel_start: usize = core::ptr::addr_of!(_kernel_start) as usize;
-    let kernel_end: usize = core::ptr::addr_of!(_kernel_end) as usize;
+    let kernel_start: usize = &raw const(_kernel_start) as usize;
+    let kernel_end: usize = &raw const(_kernel_end) as usize;
     let kernel_size: usize = kernel_end - kernel_start;
+    let kernel_physical_start: usize = kernel_start.wrapping_sub(PHYSICAL_TO_VIRTUAL_OFFSET);
 
     printkln!(
         "[kernel] start={:#x} end={:#x} size={} KiB",
@@ -73,15 +71,15 @@ pub fn kernel_main() -> ! {
 
     unsafe {
         let fdt_physical: usize = arch::fdt_address() as usize;
-        let fdt_virtual: usize = arch::fdt_virtual_address(fdt_physical);
+        let fdt_virtual: usize = arch::fdt_virtual_address();
         let fdt_total_size: usize = u32::from_be(*(fdt_virtual as *const u32).add(1)) as usize;
         let fdt_base: usize = fdt_physical & PAGE_MASK;
 
         {
-            let mut memory_block: SpinlockGuard<'_, MemoryBlock> = MEMORY_BLOCK.lock();
+            let memory_block: *mut _ = &raw mut MEMORY_BLOCK;
 
             for entry in &buffer[..count] {
-                memory_block.add_memory(MemoryBlockRegion {
+                (*memory_block).add_memory(MemoryBlockRegion {
                     base: entry.base,
                     size: entry.size,
                     flags: MemoryBlockRegionFlags::new(),
@@ -90,7 +88,7 @@ pub fn kernel_main() -> ! {
             }
 
             for entry in &reserved_buffer[..reserved_count] {
-                memory_block.reserve(MemoryBlockRegion {
+                (*memory_block).reserve(MemoryBlockRegion {
                     base: entry.base,
                     size: entry.size,
                     flags: MemoryBlockRegionFlags::new().rsrv_noinit(),
@@ -98,14 +96,27 @@ pub fn kernel_main() -> ! {
                 });
             }
 
-            memory_block.reserve(MemoryBlockRegion {
-                base: PhysicalAddress::new(kernel_start),
+            if count > 0 {
+                let firmware_end: usize = kernel_physical_start;
+                let firmware_start: usize = buffer[0].base.as_usize();
+                if firmware_end > firmware_start {
+                    (*memory_block).reserve(MemoryBlockRegion {
+                        base: PhysicalAddress::new(firmware_start),
+                        size: firmware_end - firmware_start,
+                        flags: MemoryBlockRegionFlags::new().rsrv_noinit(),
+                        node_id: 0,
+                    });
+                }
+            }
+
+            (*memory_block).reserve(MemoryBlockRegion {
+                base: PhysicalAddress::new(kernel_physical_start),
                 size: kernel_size,
                 flags: MemoryBlockRegionFlags::new().rsrv_kern(),
                 node_id: 0,
             });
 
-            memory_block.reserve(MemoryBlockRegion {
+            (*memory_block).reserve(MemoryBlockRegion {
                 base: PhysicalAddress::new(fdt_base),
                 size: (fdt_physical - fdt_base) + fdt_total_size,
                 flags: MemoryBlockRegionFlags::new().rsrv_noinit(),
@@ -114,25 +125,15 @@ pub fn kernel_main() -> ! {
         }
 
         arch::setup_direct_map(&buffer[..count]);
-        memory_management::early::memmap::memmap_init(&buffer[..count]);
+        ferrum_mm::early::memmap::memmap_init(&buffer[..count]);
 
     }
 
-    printkln!("[mm] initializing zone allocator...");
-    let kernel_end: usize = core::ptr::addr_of!(_kernel_end) as usize;
-    let kernel_end_physical: usize =
-        kernel_end.wrapping_sub(arch::PHYSICAL_TO_VIRTUAL_OFFSET);
-    let free_start: usize = (kernel_end_physical + PAGE_SIZE - 1) & PAGE_MASK;
-    for region in &buffer[..count] {
-        let region_end: usize = region.base.as_usize() + region.size as usize;
-        if region_end <= free_start {
-            continue;
-        }
-        let start: usize = free_start.max(region.base.as_usize());
-        let num_pages: usize = (region_end - start) / PAGE_SIZE as usize;
-        ZONE_ALLOCATOR.lock().add_region(PhysicalAddress::new(start), num_pages, region.node_id);
+    unsafe {
+        (*(&raw const MEMORY_BLOCK)).free_all_to_buddy(|base: PhysicalAddress, num_pages: usize, node_id: u32| {
+            ZONE_ALLOCATOR.lock().add_region(base, num_pages, node_id);
+        });
     }
-    printkln!("[mm] zone allocator ready");
 
     timer::init();
 
