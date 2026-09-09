@@ -4,15 +4,16 @@
 
 mod arch;
 mod elf;
+mod panic;
 mod print;
 mod process;
 mod splash;
+mod system_state;
 mod timer;
 
 #[cfg(target_arch = "x86_64")]
 mod limine;
 
-use core::panic::PanicInfo;
 use ferrum_mm::{
     PhysicalAddress, VirtualAddress,
     allocator::physical::zone::allocator::ZONE_ALLOCATOR,
@@ -77,14 +78,10 @@ fn memory_init() {
 
     unsafe {
         (*(&raw const MEMORY_BLOCK)).free_all_to_buddy(
-            |base: PhysicalAddress, num_pages: usize, node_id: u32| {
-                ZONE_ALLOCATOR.lock().add_region(base, num_pages, node_id);
+            |base: PhysicalAddress, num_pages: usize, node_id: usize| {
+                ZONE_ALLOCATOR.add_region(base, num_pages, node_id);
             },
         );
     }
-}
-
-#[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    loop {}
+    ZONE_ALLOCATOR.build_zonelists();
 }
