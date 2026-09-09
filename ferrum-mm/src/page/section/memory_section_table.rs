@@ -7,26 +7,26 @@ use super::memory_section::MemorySection;
 use crate::memory_block::MEMORY_BLOCK;
 use crate::page::frame::Frame;
 
-pub(crate) struct MemorySectionTable([AtomicPtr<MemorySection>; NR_SECTION_ROOTS]);
+pub struct MemorySectionTable([AtomicPtr<MemorySection>; NR_SECTION_ROOTS]);
 
 impl MemorySectionTable {
     pub(crate) const fn new() -> Self {
         Self([const { AtomicPtr::new(core::ptr::null_mut()) }; NR_SECTION_ROOTS])
     }
 
-    pub(crate) fn section_number_for_page_frame_number(&self, page_frame_number: usize) -> usize {
+    pub fn section_number_for_page_frame_number(&self, page_frame_number: usize) -> usize {
         page_frame_number >> PAGE_FRAME_NUMBER_SECTION_SHIFT
     }
 
-    pub(crate) fn base_page_frame_number_for_section(&self, section_number: usize) -> usize {
+    pub fn base_page_frame_number_for_section(&self, section_number: usize) -> usize {
         section_number << PAGE_FRAME_NUMBER_SECTION_SHIFT
     }
 
-    pub(crate) fn is_root_allocated(&self, root: usize) -> bool {
+    pub fn is_root_allocated(&self, root: usize) -> bool {
         !self.0[root].load(Ordering::Acquire).is_null()
     }
 
-    pub(crate) fn alloc_root(&self, root: usize) {
+    pub fn alloc_root(&self, root: usize) {
         let root_storage: core::ptr::NonNull<MemorySection> = unsafe {
             (*(&raw mut MEMORY_BLOCK))
                 .alloc(
