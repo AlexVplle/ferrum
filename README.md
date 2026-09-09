@@ -28,28 +28,35 @@ Like every good thing that exists, it must run Doom.
 ## Roadmap
 
 ### Memory management
-- [x] Boot / early paging
-- [x] memblock
-- [x] memmap_init
-- [x] Direct map
-- [x] Buddy allocator
-- [x] Zone allocator
-- [x] Slab allocator
-- [x] NUMA
+- [x] Boot / early paging (2026-06-14)
+- [x] memblock (2026-06-14)
+- [x] memmap_init (2026-07-19)
+- [x] Direct map (2026-07-19)
+- [x] Buddy allocator (2026-07-06)
+- [x] Zone allocator (2026-07-19)
+- [x] Slab allocator (2026-07-06)
+- [x] NUMA (2026-07-19)
+- [x] free_all_to_buddy (2026-07-19)
+- [ ] Allocation flags (GFP_KERNEL, GFP_ATOMIC, GFP_THISNODE, ...)
 - [ ] kmalloc
 - [ ] Memory shrinker
-- [x] free_all_to_buddy
+- [ ] Watermarks (WMARK_MIN/LOW/HIGH + kswapd)
 - [ ] Virtual memory areas (mm_struct + VMA)
 - [ ] Red-Black tree for VMA lookup
 - [ ] vmalloc
 - [ ] Page fault handler
+- [ ] Guard pages
+- [ ] KASAN
 
 ### Kernel infrastructure
 - [ ] Syslog (ring buffer + log levels)
 
 ### Security
-- [x] PIE
+- [x] PIE (2026-07-16)
 - [ ] KASLR
+
+### Benchmarking
+- [ ] Pluggable allocator selection (physical allocator, heap allocator, scheduler)
 
 ### Processes
 - [ ] Scheduler
@@ -84,10 +91,11 @@ cargo xtask build
 ## Run
 
 ```sh
-cargo xtask run [--memory <size>] [--window] [--gdb] [--numa]
+cargo xtask run [--memory <size>] [--window] [--gdb] [--numa <n>] [--smp <n>]
 ```
 
-- `--memory <size>` - QEMU RAM size (default: `128M`)
+- `--memory <size>` - QEMU RAM size per NUMA node (default: `128M`)
 - `--window` - display output in a window instead of serial console
 - `--gdb` - start GDB stub on port 1234
-- `--numa` - emulate two NUMA nodes
+- `--numa <n>` - emulate n NUMA nodes
+- `--smp <n>` - number of CPUs (default: 1, or equal to `--numa` count when NUMA is enabled)

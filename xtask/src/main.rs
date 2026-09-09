@@ -8,15 +8,18 @@ fn main() {
             let memory: Option<String> = parse_optional_str_arg(&args, "--memory");
             let window: bool = args.contains(&"--window".to_string());
             let gdb: bool = args.contains(&"--gdb".to_string());
-            let numa: bool = args.contains(&"--numa".to_string());
-            run(memory.as_deref(), window, gdb, numa);
+            let numa: Option<usize> = parse_optional_str_arg(&args, "--numa")
+                .map(|s| s.parse::<usize>().unwrap_or_else(|_| panic!("--numa requires a number")));
+            let smp: Option<usize> = parse_optional_str_arg(&args, "--smp")
+                .map(|s| s.parse::<usize>().unwrap_or_else(|_| panic!("--smp requires a number")));
+            run(memory.as_deref(), window, gdb, numa, smp);
         }
         Some("test") => {
             let miri: bool = args.contains(&"--miri".to_string());
             let loom: bool = args.contains(&"--loom".to_string());
             test(miri, loom);
         }
-        _ => eprintln!("Usage: cargo xtask [build|run [--memory <size>] [--window] [--gdb] [--numa]|test [--miri|--loom]]"),
+        _ => eprintln!("Usage: cargo xtask [build|run [--memory <size>] [--window] [--gdb] [--numa <n>] [--smp <n>]|test [--miri|--loom]]"),
     }
 }
 
@@ -83,7 +86,7 @@ fn build() {
     }
 }
 
-fn run(memory: Option<&str>, window: bool, gdb: bool, numa: bool) {
+fn run(memory: Option<&str>, window: bool, gdb: bool, numa: Option<usize>, smp: Option<usize>) {
     build();
 
     let kernel: std::path::PathBuf = workspace_root()
@@ -96,7 +99,7 @@ fn run(memory: Option<&str>, window: bool, gdb: bool, numa: bool) {
     };
 
     let gdb_args: &[&str] = if gdb {
-        eprintln!("GDB stub listening on port 1234 — connect with:");
+        eprintln!("GDB stub listening on port 1234 - connect with:");
         eprintln!("  riscv64-unknown-elf-gdb target/riscv64-ferrum/release/ferrum");
         eprintln!("  (gdb) target remote :1234");
         &["-s", "-S"]
@@ -107,17 +110,35 @@ fn run(memory: Option<&str>, window: bool, gdb: bool, numa: bool) {
     let mut cmd: Command = Command::new("qemu-system-riscv64");
     cmd.args(["-machine", "virt", "-kernel", kernel.to_str().unwrap()]);
 
-    if numa {
+    if let Some(n) = numa {
         let node_mem: &str = memory.unwrap_or("128M");
-        let total_mem: String = format!("{}M", parse_megabytes(node_mem) * 2);
+        let total_mem: String = format!("{}M", parse_megabytes(node_mem) * n as u64);
+        let total_cpus: usize = smp.unwrap_or(n);
         cmd.args(["-m", &total_mem]);
-        cmd.args(["-smp", "2"]);
-        cmd.args(["-object", &format!("memory-backend-ram,size={node_mem},id=mem0")]);
-        cmd.args(["-object", &format!("memory-backend-ram,size={node_mem},id=mem1")]);
-        cmd.args(["-numa", "node,nodeid=0,memdev=mem0,cpus=0"]);
-        cmd.args(["-numa", "node,nodeid=1,memdev=mem1,cpus=1"]);
+        cmd.args(["-smp", &total_cpus.to_string()]);
+        for i in 0..n {
+            cmd.args(["-object", &format!("memory-backend-ram,size={node_mem},id=mem{i}")]);
+        }
+        let cpus_per_node: usize = total_cpus / n;
+        let remainder: usize = total_cpus % n;
+        let mut cpu_offset: usize = 0;
+        for i in 0..n {
+            let count: usize = cpus_per_node + if i < remainder { 1 } else { 0 };
+            let start: usize = cpu_offset;
+            let end: usize = cpu_offset + count - 1;
+            let cpus_arg: String = if start == end {
+                format!("cpus={start}")
+            } else {
+                format!("cpus={start}-{end}")
+            };
+            cmd.args(["-numa", &format!("node,nodeid={i},memdev=mem{i},{cpus_arg}")]);
+            cpu_offset += count;
+        }
     } else {
         cmd.args(["-m", memory.unwrap_or("128M")]);
+        if let Some(s) = smp {
+            cmd.args(["-smp", &s.to_string()]);
+        }
     }
 
     cmd.args(display_args).args(gdb_args);
