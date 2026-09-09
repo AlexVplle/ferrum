@@ -39,6 +39,7 @@ Like every good thing that exists, it must run Doom.
 - [x] free_all_to_buddy (2026-07-19)
 - [ ] Allocation flags (GFP_KERNEL, GFP_ATOMIC, GFP_THISNODE, ...)
 - [ ] kmalloc
+- [ ] Per-CPU pages (PCP)
 - [ ] Memory shrinker
 - [ ] Watermarks (WMARK_MIN/LOW/HIGH + kswapd)
 - [ ] Memory compaction
