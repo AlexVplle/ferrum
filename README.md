@@ -26,8 +26,9 @@ Like every good thing that exists, it must run Doom.
 - [x] Slab allocator
 - [x] NUMA
 - [ ] kmalloc
-- [ ] free_all_to_buddy
+- [x] free_all_to_buddy
 - [ ] Virtual memory areas (mm_struct + VMA)
+- [ ] Red-Black tree for VMA lookup
 - [ ] Page fault handler
 
 ### Kernel infrastructure
