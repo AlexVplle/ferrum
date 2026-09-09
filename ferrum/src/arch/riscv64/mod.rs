@@ -19,9 +19,12 @@ core::arch::global_asm!(
     ".section .text.boot,\"ax\"",
     ".global _start",
     "_start:",
-    "bnez a0, .Lhalt",
     ".option push",
     ".option nopic",
+    "la t0, BOOT_HART_CLAIMED",
+    "li t1, 1",
+    "amoswap.w.aq t2, t1, (t0)",
+    "bnez t2, .Lhalt",
     "la sp, INIT_KERNEL_STACK + {stack_size}",
     "la tp, INIT_THREAD",
     ".option pop",
@@ -31,6 +34,9 @@ core::arch::global_asm!(
     "j .Lhalt",
     stack_size = const crate::process::KERNEL_STACK_SIZE,
 );
+
+#[unsafe(no_mangle)]
+static BOOT_HART_CLAIMED: core::sync::atomic::AtomicU32 = core::sync::atomic::AtomicU32::new(0);
 
 #[unsafe(no_mangle)]
 extern "C" fn physical_entry(hartid: usize, fdt: usize) -> ! {
