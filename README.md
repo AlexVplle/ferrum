@@ -50,3 +50,14 @@ Like every good thing that exists, it must run Doom.
 ```sh
 cargo xtask build
 ```
+
+## Run
+
+```sh
+cargo xtask run [--memory <size>] [--window] [--gdb] [--numa]
+```
+
+- `--memory <size>` - QEMU RAM size (default: `128M`)
+- `--window` - display output in a window instead of serial console
+- `--gdb` - start GDB stub on port 1234
+- `--numa` - emulate two NUMA nodes
