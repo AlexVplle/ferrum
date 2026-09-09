@@ -1,0 +1,13 @@
+[package]
+name = "ferrum-core"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+fuzz = []
+
+[target.'cfg(loom)'.dependencies]
+loom = "0.7"
+
+[dev-dependencies]
+proptest = "1"
