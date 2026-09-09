@@ -1,5 +1,8 @@
 use std::process::Command;
 
+mod run_config;
+use run_config::RunConfig;
+
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
@@ -8,22 +11,14 @@ fn main() {
             build(debug);
         }
         Some("run") => {
-            let memory: Option<String> = parse_optional_str_arg(&args, "--memory");
-            let window: bool = args.contains(&"--window".to_string());
-            let gdb: bool = args.contains(&"--gdb".to_string());
-            let debug: bool = args.contains(&"--debug".to_string());
-            let numa: Option<usize> = parse_optional_str_arg(&args, "--numa")
-                .map(|s| s.parse::<usize>().unwrap_or_else(|_| panic!("--numa requires a number")));
-            let smp: Option<usize> = parse_optional_str_arg(&args, "--smp")
-                .map(|s| s.parse::<usize>().unwrap_or_else(|_| panic!("--smp requires a number")));
-            run(memory.as_deref(), window, gdb, debug, numa, smp);
+            run(RunConfig::from_args(&args));
         }
         Some("test") => {
             let miri: bool = args.contains(&"--miri".to_string());
             let loom: bool = args.contains(&"--loom".to_string());
             test(miri, loom);
         }
-        _ => eprintln!("Usage: cargo xtask [build [--debug]|run [--memory <size>] [--window] [--gdb] [--debug] [--numa <n>] [--smp <n>]|test [--miri|--loom]]"),
+        _ => eprintln!("Usage: cargo xtask [build [--debug]|run [--memory <size>] [--window] [--gdb] [--debug] [--numa <n>] [--smp <n>] [--distance src,dst,value]...|test [--miri|--loom]]"),
     }
 }
 
@@ -55,9 +50,25 @@ fn run_test_cmd(subargs: &[&str], extra: &[&str], rustflags: Option<&str>, mirif
     }
 }
 
-fn parse_optional_str_arg(args: &[String], flag: &str) -> Option<String> {
-    let pos: usize = args.iter().position(|a| a == flag)?;
-    Some(args.get(pos + 1).unwrap_or_else(|| panic!("missing value for {flag}")).clone())
+pub fn parse_repeated_str_arg(args: &[String], flag: &str) -> Vec<String> {
+    let mut result: Vec<String> = Vec::new();
+    let mut i: usize = 0;
+    while i < args.len() {
+        if args[i] == flag {
+            if let Some(value) = args.get(i + 1) {
+                result.push(value.clone());
+                i += 2;
+                continue;
+            }
+        }
+        i += 1;
+    }
+    result
+}
+
+pub fn parse_optional_str_arg(args: &[String], flag: &str) -> Option<String> {
+    let position: usize = args.iter().position(|arg: &String| arg == flag)?;
+    Some(args.get(position + 1).unwrap_or_else(|| panic!("missing value for {flag}")).clone())
 }
 
 fn build(debug: bool) {
@@ -95,21 +106,21 @@ fn build(debug: bool) {
     }
 }
 
-fn run(memory: Option<&str>, window: bool, gdb: bool, debug: bool, numa: Option<usize>, smp: Option<usize>) {
-    build(debug);
+fn run(config: RunConfig) {
+    build(config.debug);
 
-    let profile: &str = if debug { "debug" } else { "release" };
+    let profile: &str = if config.debug { "debug" } else { "release" };
     let kernel: std::path::PathBuf = workspace_root()
         .join(format!("target/riscv64-ferrum/{profile}/ferrum"));
 
-    let display_args: &[&str] = if window {
+    let display_args: &[&str] = if config.window {
         &["-serial", "vc:640x480", "-display", "cocoa,zoom-to-fit=on", "-monitor", "none"]
     } else {
         &["-nographic"]
     };
 
-    let gdb_args: &[&str] = if gdb {
-        let elf: &str = if debug {
+    let gdb_args: &[&str] = if config.gdb {
+        let elf: &str = if config.debug {
             "target/riscv64-ferrum/debug/ferrum"
         } else {
             "target/riscv64-ferrum/release/ferrum"
@@ -125,19 +136,19 @@ fn run(memory: Option<&str>, window: bool, gdb: bool, debug: bool, numa: Option<
     let mut cmd: Command = Command::new("qemu-system-riscv64");
     cmd.args(["-machine", "virt", "-kernel", kernel.to_str().unwrap()]);
 
-    if let Some(n) = numa {
-        let node_mem: &str = memory.unwrap_or("128M");
-        let total_mem: String = format!("{}M", parse_megabytes(node_mem) * n as u64);
-        let total_cpus: usize = smp.unwrap_or(n);
+    if let Some(numa) = config.numa {
+        let node_mem: &str = config.memory.as_deref().unwrap_or("128M");
+        let total_mem: String = format!("{}M", parse_megabytes(node_mem) * numa as u64);
+        let total_cpus: usize = config.smp.unwrap_or(numa);
         cmd.args(["-m", &total_mem]);
         cmd.args(["-smp", &total_cpus.to_string()]);
-        for i in 0..n {
+        for i in 0..numa {
             cmd.args(["-object", &format!("memory-backend-ram,size={node_mem},id=mem{i}")]);
         }
-        let cpus_per_node: usize = total_cpus / n;
-        let remainder: usize = total_cpus % n;
+        let cpus_per_node: usize = total_cpus / numa;
+        let remainder: usize = total_cpus % numa;
         let mut cpu_offset: usize = 0;
-        for i in 0..n {
+        for i in 0..numa {
             let count: usize = cpus_per_node + if i < remainder { 1 } else { 0 };
             let start: usize = cpu_offset;
             let end: usize = cpu_offset + count - 1;
@@ -149,10 +160,13 @@ fn run(memory: Option<&str>, window: bool, gdb: bool, debug: bool, numa: Option<
             cmd.args(["-numa", &format!("node,nodeid={i},memdev=mem{i},{cpus_arg}")]);
             cpu_offset += count;
         }
+        for distance in &config.distances {
+            cmd.args(["-numa", &format!("dist,{distance}")]);
+        }
     } else {
-        cmd.args(["-m", memory.unwrap_or("128M")]);
-        if let Some(s) = smp {
-            cmd.args(["-smp", &s.to_string()]);
+        cmd.args(["-m", config.memory.as_deref().unwrap_or("128M")]);
+        if let Some(smp) = config.smp {
+            cmd.args(["-smp", &smp.to_string()]);
         }
     }
 
@@ -162,9 +176,9 @@ fn run(memory: Option<&str>, window: bool, gdb: bool, debug: bool, numa: Option<
     std::process::exit(status.code().unwrap_or(1));
 }
 
-fn parse_megabytes(s: &str) -> u64 {
-    let s: &str = s.trim_end_matches(|c: char| c.is_alphabetic());
-    s.parse::<u64>().unwrap_or(128)
+fn parse_megabytes(mem: &str) -> u64 {
+    let digits: &str = mem.trim_end_matches(|c: char| c.is_alphabetic());
+    digits.parse::<u64>().unwrap_or(128)
 }
 
 fn workspace_root() -> std::path::PathBuf {
