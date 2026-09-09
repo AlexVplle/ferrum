@@ -42,6 +42,7 @@ Like every good thing that exists, it must run Doom.
 - [ ] Per-CPU pages (PCP)
 - [ ] Memory shrinker
 - [ ] Watermarks (WMARK_MIN/LOW/HIGH + kswapd)
+- [ ] Memory hotplug
 - [ ] Memory compaction
 - [ ] ZONE_MOVABLE
 - [ ] Memory policy
