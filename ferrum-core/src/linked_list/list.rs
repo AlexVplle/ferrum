@@ -101,6 +101,31 @@ impl<T: Linked<Links<T>>> List<T> {
         Some(tail_ptr)
     }
 
+    pub fn insert_sorted<F>(&mut self, ptr: NonNull<T>, mut before: F)
+    where
+        F: FnMut(&T, &T) -> bool,
+    {
+        let links: &mut Links<T> = unsafe { T::links(ptr).as_mut() };
+        let mut cursor: Link<T> = self.head;
+        while let Some(existing) = cursor {
+            if before(unsafe { ptr.as_ref() }, unsafe { existing.as_ref() }) {
+                let existing_links: &mut Links<T> = unsafe { T::links(existing).as_mut() };
+                let prev: Link<T> = existing_links.prev();
+                links.set_next(Some(existing));
+                links.set_prev(prev);
+                existing_links.set_prev(Some(ptr));
+                match prev {
+                    None => self.head = Some(ptr),
+                    Some(prev_ptr) => { unsafe { T::links(prev_ptr).as_mut() }.set_next(Some(ptr)); }
+                }
+                self.len += 1;
+                return;
+            }
+            cursor = unsafe { T::links(existing).as_ref() }.next();
+        }
+        self.push_back(ptr);
+    }
+
     pub unsafe fn remove(&mut self, ptr: NonNull<T>) {
         let links: &mut Links<T> = unsafe { T::links(ptr).as_mut() };
         let prev: Link<T> = links.prev();
