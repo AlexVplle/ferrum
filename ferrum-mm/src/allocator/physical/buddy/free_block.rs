@@ -8,10 +8,6 @@ pub struct FreeBlock {
 }
 
 unsafe impl Linked<Links<FreeBlock>> for FreeBlock {
-    type Handle = NonNull<FreeBlock>;
-
-    fn into_ptr(handle: NonNull<FreeBlock>) -> NonNull<FreeBlock> { handle }
-    fn from_ptr(ptr: NonNull<FreeBlock>) -> NonNull<FreeBlock> { ptr }
     fn links(ptr: NonNull<FreeBlock>) -> NonNull<Links<FreeBlock>> {
         unsafe { NonNull::new_unchecked(&raw mut (*ptr.as_ptr()).links) }
     }

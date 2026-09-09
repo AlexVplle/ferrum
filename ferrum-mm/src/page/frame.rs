@@ -47,14 +47,6 @@ impl Frame {
 }
 
 unsafe impl Linked<Links<Frame>> for Frame {
-    type Handle = NonNull<Frame>;
-
-    fn into_ptr(handle: NonNull<Frame>) -> NonNull<Frame> {
-        handle
-    }
-    fn from_ptr(ptr: NonNull<Frame>) -> NonNull<Frame> {
-        ptr
-    }
     fn links(ptr: NonNull<Frame>) -> NonNull<Links<Frame>> {
         unsafe { NonNull::new_unchecked(&raw mut (*ptr.as_ptr()).links) }
     }

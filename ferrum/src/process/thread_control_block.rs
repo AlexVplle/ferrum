@@ -19,14 +19,6 @@ pub(super) struct ThreadControlBlock {
 }
 
 unsafe impl Linked<Links<ThreadControlBlock>> for ThreadControlBlock {
-    type Handle = NonNull<ThreadControlBlock>;
-
-    fn into_ptr(handle: NonNull<ThreadControlBlock>) -> NonNull<ThreadControlBlock> {
-        handle
-    }
-    fn from_ptr(ptr: NonNull<ThreadControlBlock>) -> NonNull<ThreadControlBlock> {
-        ptr
-    }
     fn links(ptr: NonNull<ThreadControlBlock>) -> NonNull<Links<ThreadControlBlock>> {
         unsafe { NonNull::new_unchecked(&raw mut (*ptr.as_ptr()).run_list) }
     }

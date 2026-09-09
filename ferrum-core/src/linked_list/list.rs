@@ -37,8 +37,7 @@ impl<T: Linked<Links<T>>> List<T> {
         self.tail
     }
 
-    pub fn push_front(&mut self, handle: T::Handle) {
-        let ptr: NonNull<T> = T::into_ptr(handle);
+    pub fn push_front(&mut self, ptr: NonNull<T>) {
         let links: &mut Links<T> = unsafe { T::links(ptr).as_mut() };
         links.set_next(self.head);
         links.set_prev(None);
@@ -53,8 +52,7 @@ impl<T: Linked<Links<T>>> List<T> {
         self.len += 1;
     }
 
-    pub fn push_back(&mut self, handle: T::Handle) {
-        let ptr: NonNull<T> = T::into_ptr(handle);
+    pub fn push_back(&mut self, ptr: NonNull<T>) {
         let links: &mut Links<T> = unsafe { T::links(ptr).as_mut() };
         links.set_prev(self.tail);
         links.set_next(None);
@@ -69,7 +67,7 @@ impl<T: Linked<Links<T>>> List<T> {
         self.len += 1;
     }
 
-    pub fn pop_front(&mut self) -> Option<T::Handle> {
+    pub fn pop_front(&mut self) -> Option<NonNull<T>> {
         let head_ptr: NonNull<T> = self.head?;
         let links: &mut Links<T> = unsafe { T::links(head_ptr).as_mut() };
         let next: Link<T> = links.next();
@@ -83,10 +81,10 @@ impl<T: Linked<Links<T>>> List<T> {
         }
         self.head = next;
         self.len -= 1;
-        Some(T::from_ptr(head_ptr))
+        Some(head_ptr)
     }
 
-    pub fn pop_back(&mut self) -> Option<T::Handle> {
+    pub fn pop_back(&mut self) -> Option<NonNull<T>> {
         let tail_ptr: NonNull<T> = self.tail?;
         let links: &mut Links<T> = unsafe { T::links(tail_ptr).as_mut() };
         let prev: Link<T> = links.prev();
@@ -100,11 +98,10 @@ impl<T: Linked<Links<T>>> List<T> {
         }
         self.tail = prev;
         self.len -= 1;
-        Some(T::from_ptr(tail_ptr))
+        Some(tail_ptr)
     }
 
-    pub unsafe fn remove(&mut self, handle: T::Handle) {
-        let ptr: NonNull<T> = T::into_ptr(handle);
+    pub unsafe fn remove(&mut self, ptr: NonNull<T>) {
         let links: &mut Links<T> = unsafe { T::links(ptr).as_mut() };
         let prev: Link<T> = links.prev();
         let next: Link<T> = links.next();
@@ -148,14 +145,6 @@ mod tests {
     }
 
     unsafe impl Linked<Links<Node>> for Node {
-        type Handle = NonNull<Node>;
-
-        fn into_ptr(handle: NonNull<Node>) -> NonNull<Node> {
-            handle
-        }
-        fn from_ptr(ptr: NonNull<Node>) -> NonNull<Node> {
-            ptr
-        }
         fn links(ptr: NonNull<Node>) -> NonNull<Links<Node>> {
             unsafe { NonNull::new_unchecked(&raw mut (*ptr.as_ptr()).links) }
         }
