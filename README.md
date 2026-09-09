@@ -49,7 +49,16 @@ Like every good thing that exists, it must run Doom.
 - [ ] KASAN
 
 ### Kernel infrastructure
+- [x] Atomic notifier chain (2026-07-22)
+- [x] Panic handler (notifier chain, panic_timeout, PanicInfo) (2026-07-22)
+- [x] Die notifier chain (2026-07-22)
+- [x] Reboot (kernel_restart, kernel_halt, kernel_power_off) (2026-07-22)
+- [ ] Blocking notifier chain (needs rwsem + scheduler)
+- [ ] Reboot notifier chain (needs blocking notifier chain)
+- [ ] WARN / WARN_ON
+- [ ] Tainted mask
 - [ ] Syslog (ring buffer + log levels)
+- [ ] Kernel loadable modules (KLM)
 
 ### Security
 - [x] PIE (2026-07-16)
