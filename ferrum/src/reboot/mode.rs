@@ -1,3 +1,4 @@
+#[repr(usize)]
 pub enum RebootMode {
     Undefined,
     Cold,
