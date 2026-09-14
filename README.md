@@ -40,10 +40,14 @@ Like every good thing that exists, it must run Doom.
 - [ ] Allocation flags (GFP_KERNEL, GFP_ATOMIC, GFP_THISNODE, ...)
 - [ ] kmalloc
 - [ ] Per-CPU pages (PCP)
+- [ ] vm_stat / zone_stat_item
 - [ ] Memory shrinker
-- [ ] Watermarks (WMARK_MIN/LOW/HIGH + kswapd)
+- [ ] Watermarks
+- [ ] kswapd
 - [ ] Memory hotplug
 - [ ] Memory compaction
+- [ ] Contiguous Memory Allocator
+- [ ] Huge pages
 - [ ] ZONE_MOVABLE
 - [ ] Memory policy
 - [ ] Virtual memory areas (mm_struct + VMA)

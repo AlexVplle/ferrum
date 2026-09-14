@@ -3,7 +3,7 @@ use core::sync::atomic::AtomicUsize;
 
 use super::frame_usage::FrameUsage;
 use crate::allocator::heap::slub::free_object::FreeObject;
-use crate::allocator::physical::zone::ZoneType;
+use crate::allocator::physical::page_allocator::ZoneType;
 use ferrum_core::linked_list::list::List;
 use ferrum_core::linked_list::list::linked::Linked;
 use ferrum_core::linked_list::list::links::Links;

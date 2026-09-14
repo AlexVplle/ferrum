@@ -1,4 +1,4 @@
-use crate::allocator::physical::zone::constants::MAX_NODES;
+use crate::allocator::physical::page_allocator::constants::MAX_NODES;
 
 use super::constants::{LOCAL_DISTANCE, REMOTE_DISTANCE};
 

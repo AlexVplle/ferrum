@@ -1,5 +1,5 @@
 use crate::PhysicalAddress;
-use crate::allocator::physical::zone::allocator::ZONE_ALLOCATOR;
+use crate::allocator::physical::page_allocator::allocator::PAGE_ALLOCATOR;
 use crate::memory_block::{MEMORY_BLOCK, MemoryBlock, MemoryBlockRegion, memory_block_init};
 
 pub fn memory_manager_initialization(kernel_physical_start: PhysicalAddress, kernel_size: usize) {
@@ -41,10 +41,10 @@ pub fn memory_manager_initialization(kernel_physical_start: PhysicalAddress, ker
     unsafe {
         (*(&raw const MEMORY_BLOCK)).free_all_to_buddy(
             |base: PhysicalAddress, num_pages: usize, node_id: usize| {
-                ZONE_ALLOCATOR.add_region(base, num_pages, node_id);
+                PAGE_ALLOCATOR.add_region(base, num_pages, node_id);
             },
         );
     }
 
-    ZONE_ALLOCATOR.build_alloc_order();
+    PAGE_ALLOCATOR.build_alloc_order();
 }

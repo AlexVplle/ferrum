@@ -1,3 +1,4 @@
+use crate::allocator::physical::page_allocator::zone_list::zone_list_type::ZoneListType;
 use ferrum_macros::flag;
 
 pub struct GetFreePageFlags(usize);
@@ -38,6 +39,16 @@ impl GetFreePageFlags {
     flag!(this_node, 20);
     flag!(account, 21);
     flag!(zero_tags, 22);
+}
+
+impl GetFreePageFlags {
+    pub fn get_free_pages_zonelist(&self) -> ZoneListType {
+        if self.is_this_node() {
+            ZoneListType::NoFallback
+        } else {
+            ZoneListType::Fallback
+        }
+    }
 }
 
 impl core::ops::BitOr for GetFreePageFlags {

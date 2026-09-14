@@ -1,31 +1,57 @@
+pub mod flags;
+pub mod lru_list;
+pub mod lru_vector;
+pub mod node_stat_item;
+
 use super::constants::{MAX_ZONELISTS, NR_ZONES};
 use super::zone::Zone;
 use super::zone_list::ZoneList;
 use super::zone_type::ZoneType;
 use crate::arch::{DIRECT_MEMORY_ACCESS_ZONE_END, PAGE_SIZE};
-use crate::page::section::MEM_SECTION;
+use crate::page::section::MEMORY_SECTION;
 use crate::page::frame::Frame;
 use crate::physical_address::PhysicalAddress;
+use flags::MemoryNodeFlags;
+use lru_vector::LruVector;
 
 pub struct MemoryNode {
     pub zones: [Zone; NR_ZONES],
     pub alloc_order: [ZoneList; MAX_ZONELISTS],
-    pub present_pages: usize,
+    pub start_page_frame_number: usize,
+    spanned_pages: usize,
+    present_pages: usize,
+    pub nr_zones: usize,
+    pub total_reserve_pages: usize,
+    pub flags: MemoryNodeFlags,
     pub id: usize,
+    pub lru_vector: LruVector,
 }
 
 impl MemoryNode {
+    pub fn spanned_pages(&self) -> usize {
+        self.spanned_pages
+    }
+
+    pub fn present_pages(&self) -> usize {
+        self.present_pages
+    }
+
+    pub fn end_page_frame_number(&self) -> usize {
+        self.start_page_frame_number + self.spanned_pages
+    }
+
     pub fn zone_mut(&mut self, kind: ZoneType) -> &mut Zone {
         &mut self.zones[kind as usize]
     }
 
     pub fn init_zone(&mut self, zone_type: ZoneType, base: PhysicalAddress, num_pages: usize) {
-        self.zone_mut(zone_type).init(base, num_pages);
+        self.zone_mut(zone_type).init(zone_type, base, num_pages);
         self.present_pages += num_pages;
+        self.nr_zones += 1;
         let end: PhysicalAddress = base + num_pages * PAGE_SIZE;
         for page_frame_number in base.to_page_frame_number()..end.to_page_frame_number() {
             let frame: &mut Frame =
-                unsafe { &mut *MEM_SECTION.page_frame_number_to_page(page_frame_number) };
+                unsafe { &mut *MEMORY_SECTION.page_frame_number_to_page(page_frame_number) };
             frame.set_zone(zone_type);
             frame.set_node(self.id);
         }
@@ -33,6 +59,15 @@ impl MemoryNode {
 
     pub fn add_region(&mut self, base: PhysicalAddress, num_pages: usize) {
         let end: PhysicalAddress = base + num_pages * PAGE_SIZE;
+        let start_page_frame_number: usize = base.to_page_frame_number();
+        let end_page_frame_number: usize = end.to_page_frame_number();
+        if self.spanned_pages == 0 {
+            self.start_page_frame_number = start_page_frame_number;
+        } else {
+            self.start_page_frame_number = self.start_page_frame_number.min(start_page_frame_number);
+        }
+        let current_end_page_frame_number: usize = self.start_page_frame_number + self.spanned_pages;
+        self.spanned_pages = end_page_frame_number.max(current_end_page_frame_number) - self.start_page_frame_number;
 
         if let Some(direct_memory_access_zone_end) = DIRECT_MEMORY_ACCESS_ZONE_END {
             if base.as_usize() < direct_memory_access_zone_end {
@@ -59,9 +94,15 @@ impl MemoryNode {
         const EMPTY_ZONE: Zone = Zone::empty();
         Self {
             zones: [EMPTY_ZONE; NR_ZONES],
-            alloc_order: [ZoneList::empty()],
+            alloc_order: [ZoneList::empty(), ZoneList::empty()],
+            start_page_frame_number: 0,
+            spanned_pages: 0,
             present_pages: 0,
+            nr_zones: 0,
+            total_reserve_pages: 0,
+            flags: MemoryNodeFlags::new(),
             id: node_id,
+            lru_vector: LruVector::new(),
         }
     }
 }

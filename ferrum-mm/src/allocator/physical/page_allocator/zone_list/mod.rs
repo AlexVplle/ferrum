@@ -1,5 +1,9 @@
-use super::zone_ref::ZoneRef;
-use super::{ZoneType, MAX_ZONELIST_ENTRIES};
+pub mod zone_list_type;
+pub mod zone_ref;
+
+use crate::allocator::physical::page_allocator::constants::MAX_ZONELIST_ENTRIES;
+use crate::allocator::physical::page_allocator::zone_type::ZoneType;
+use zone_ref::ZoneRef;
 
 pub struct ZoneList {
     refs: [ZoneRef; MAX_ZONELIST_ENTRIES],
@@ -8,7 +12,7 @@ pub struct ZoneList {
 
 impl ZoneList {
     pub const fn empty() -> Self {
-        const EMPTY_REF: ZoneRef = ZoneRef { node_id: 0, zone: ZoneType::Device };
+        const EMPTY_REF: ZoneRef = ZoneRef::new(0, ZoneType::Device);
         Self {
             refs: [EMPTY_REF; MAX_ZONELIST_ENTRIES],
             len: 0,

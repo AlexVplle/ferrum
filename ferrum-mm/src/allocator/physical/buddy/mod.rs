@@ -1,4 +1,4 @@
-mod constants;
+pub mod constants;
 mod free_area;
 mod free_block;
 
@@ -9,7 +9,7 @@ use crate::arch::PAGE_SIZE;
 use crate::memory_block::MEMORY_BLOCK;
 use crate::page::{
     frame::Frame, frame_usage::FrameUsage,
-    section::{MEM_SECTION, memory_section::page_frame_number_to_physical},
+    section::{MEMORY_SECTION, memory_section::page_frame_number_to_physical},
 };
 use crate::physical_address::PhysicalAddress;
 use crate::virtual_address::VirtualAddress;
@@ -93,7 +93,7 @@ impl BuddyAllocator {
         let bit_index: usize = page_index >> (order + 1);
         self.areas[order].toggle_buddy_bit(bit_index);
         unsafe {
-            let page: &mut Frame = &mut *MEM_SECTION.page_frame_number_to_page(page_frame_number);
+            let page: &mut Frame = &mut *MEMORY_SECTION.page_frame_number_to_page(page_frame_number);
             page.set_buddy(order);
             let node: NonNull<FreeBlock> = NonNull::new_unchecked(
                 PhysicalAddress::new(page_frame_number_to_physical(page_frame_number))
@@ -116,7 +116,7 @@ impl BuddyAllocator {
             self.areas[order].toggle_buddy_bit(bit_index);
             unsafe {
                 let page: &mut Frame =
-                    &mut *MEM_SECTION.page_frame_number_to_page(page_frame_number);
+                    &mut *MEMORY_SECTION.page_frame_number_to_page(page_frame_number);
                 page.set_uninitialized();
             }
             return Some(page_frame_number);
@@ -129,7 +129,7 @@ impl BuddyAllocator {
     }
 
     fn free_order(&mut self, page_frame_number: usize, order: usize) {
-        debug_assert!(MEM_SECTION.page_frame_number_valid(page_frame_number));
+        debug_assert!(MEMORY_SECTION.page_frame_number_valid(page_frame_number));
         if order >= MAX_PAGE_ORDER {
             self.push_block(page_frame_number, order);
             return;
@@ -146,7 +146,7 @@ impl BuddyAllocator {
             if should_merge {
                 unsafe {
                     let buddy_page: &Frame =
-                        &*MEM_SECTION.page_frame_number_to_page(buddy_page_frame_number);
+                        &*MEMORY_SECTION.page_frame_number_to_page(buddy_page_frame_number);
                     if matches!(buddy_page.get_usage(), FrameUsage::Buddy { order: o } if *o == order)
                     {
                         let buddy_node: NonNull<FreeBlock> = NonNull::new_unchecked(
@@ -159,7 +159,7 @@ impl BuddyAllocator {
                         self.areas[order].remove(buddy_node);
                         self.areas[order].toggle_buddy_bit(bit_index);
                         let buddy_page_mut: &mut Frame =
-                            &mut *MEM_SECTION.page_frame_number_to_page(buddy_page_frame_number);
+                            &mut *MEMORY_SECTION.page_frame_number_to_page(buddy_page_frame_number);
                         buddy_page_mut.set_uninitialized();
                         let merged_page_frame_number: usize =
                             page_frame_number.min(buddy_page_frame_number);

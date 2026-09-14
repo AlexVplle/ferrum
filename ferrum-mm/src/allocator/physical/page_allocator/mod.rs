@@ -3,9 +3,10 @@ pub mod constants;
 pub mod memory_node;
 pub mod node_state;
 pub mod node_states;
+pub mod watermark;
 pub mod zone;
 pub mod zone_list;
-pub mod zone_ref;
+pub use zone::zone_stat_item;
 pub mod zone_type;
 
 pub use constants::{MAX_NODES, MAX_ZONELIST_ENTRIES, MAX_ZONELISTS, NR_ZONES};

@@ -1,6 +1,6 @@
 use core::mem::size_of;
 
-use crate::allocator::physical::zone::constants::MAX_NODES;
+use crate::allocator::physical::page_allocator::constants::MAX_NODES;
 use crate::arch::{fixmap::fdt_virtual_address, MAX_HARTS};
 use crate::early::numa::constants::DISTANCE_MATRIX_ENTRY_SIZE;
 use crate::early::numa::{CPU_TO_NODE, distance};
