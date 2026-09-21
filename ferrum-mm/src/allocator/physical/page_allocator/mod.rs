@@ -3,6 +3,8 @@ pub mod constants;
 pub mod memory_node;
 pub mod node_state;
 pub mod node_states;
+pub mod per_cpu_pages;
+pub mod per_cpu_zonestat;
 pub mod watermark;
 pub mod zone;
 pub mod zone_list;

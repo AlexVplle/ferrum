@@ -6,7 +6,7 @@ extern crate alloc;
 
 pub mod allocator;
 pub mod total_ram_pages;
-pub mod migrate;
+pub mod migrate_type;
 pub mod init;
 pub mod gfp;
 pub mod memory_descriptor;
