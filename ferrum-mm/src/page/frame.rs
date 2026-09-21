@@ -11,7 +11,7 @@ use ferrum_core::linked_list::list::links::Links;
 pub struct Frame {
     pub links: Links<Frame>,
     pub zone: ZoneType,
-    pub node: usize,
+    node: usize,
     usage: FrameUsage,
     pub ref_count: AtomicUsize,
 }
@@ -61,6 +61,10 @@ impl Frame {
 
     pub fn set_node(&mut self, node_id: usize) {
         self.node = node_id;
+    }
+
+    pub fn get_node(&self) -> usize {
+        self.node
     }
 }
 

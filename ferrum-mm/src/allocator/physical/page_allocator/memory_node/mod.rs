@@ -40,12 +40,17 @@ impl MemoryNode {
         self.start_page_frame_number + self.spanned_pages
     }
 
+    pub fn memory_control_group_lruvector(&mut self) -> &mut LruVector {
+        &mut self.lru_vector
+    }
+
     pub fn zone_mut(&mut self, kind: ZoneType) -> &mut Zone {
         &mut self.zones[kind as usize]
     }
 
     pub fn init_zone(&mut self, zone_type: ZoneType, base: PhysicalAddress, num_pages: usize) {
-        self.zone_mut(zone_type).init(zone_type, base, num_pages);
+        let node_id: usize = self.id;
+        self.zone_mut(zone_type).init(zone_type, node_id, base, num_pages);
         self.present_pages += num_pages;
         self.nr_zones += 1;
         let end: PhysicalAddress = base + num_pages * PAGE_SIZE;

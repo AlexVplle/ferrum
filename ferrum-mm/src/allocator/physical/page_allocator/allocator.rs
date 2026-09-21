@@ -1,3 +1,4 @@
+use core::cell::UnsafeCell;
 use super::constants::{MAX_NODES, MAX_ZONELIST_ENTRIES, NR_ZONES};
 use super::zone::Zone;
 use super::zone_stat_item::ZoneStatItem;
@@ -13,15 +14,11 @@ use crate::arch::PAGE_SIZE;
 use crate::page::frame::Frame;
 use crate::page::section::MEMORY_SECTION;
 use crate::physical_address::PhysicalAddress;
-use ferrum_core::spinlock::{Spinlock, SpinlockGuard};
-use lock_dependency::LockClassKey;
-
-static ZONE_NODE_KEY: LockClassKey = LockClassKey::new();
 
 pub static PAGE_ALLOCATOR: PageAllocator = PageAllocator::new();
 
 pub struct PageAllocator {
-    node_data: [Spinlock<MemoryNode>; MAX_NODES],
+    node_data: [UnsafeCell<MemoryNode>; MAX_NODES],
     node_states: NodeStates,
 }
 
@@ -30,19 +27,27 @@ unsafe impl Sync for PageAllocator {}
 impl PageAllocator {
     pub const fn new() -> Self {
         const EMPTY_NODE: MemoryNode = MemoryNode::empty(0);
-        const EMPTY_SLOT: Spinlock<MemoryNode> = Spinlock::new_tracked(EMPTY_NODE, &ZONE_NODE_KEY, "zone_node");
+        const EMPTY_CELL: UnsafeCell<MemoryNode> = UnsafeCell::new(EMPTY_NODE);
         Self {
-            node_data: [EMPTY_SLOT; MAX_NODES],
+            node_data: [EMPTY_CELL; MAX_NODES],
             node_states: NodeStates::new(),
         }
     }
 
+    fn node(&self, id: usize) -> &MemoryNode {
+        unsafe { &*self.node_data[id].get() }
+    }
+
+    fn node_mut(&self, id: usize) -> &mut MemoryNode {
+        unsafe { &mut *self.node_data[id].get() }
+    }
+
     pub fn add_region(&self, base: PhysicalAddress, num_pages: usize, node_id: usize) {
         if !self.node_states.node_is_set(node_id, NodeState::Online) {
-            self.node_data[node_id].lock().id = node_id;
+            self.node_mut(node_id).id = node_id;
             self.node_states.node_set(node_id, NodeState::Online);
         }
-        self.node_data[node_id].lock().add_region(base, num_pages);
+        self.node_mut(node_id).add_region(base, num_pages);
     }
 
     pub fn build_alloc_order(&self) {
@@ -58,7 +63,7 @@ impl PageAllocator {
             remote_nodes[..remote_count].sort_unstable_by_key(|&other_id: &usize| {
                 crate::early::numa::distance::numa_distance(node_id, other_id)
             });
-            let mut node: SpinlockGuard<'_, MemoryNode> = self.node_data[node_id].lock();
+            let node: &mut MemoryNode = self.node_mut(node_id);
             let fallback: &mut ZoneList = &mut node.alloc_order[ZoneListType::Fallback as usize];
             fallback.push(ZoneRef::new(node_id, ZoneType::Normal));
             fallback.push(ZoneRef::new(node_id, ZoneType::DirectMemoryAccess));
@@ -75,7 +80,7 @@ impl PageAllocator {
 
     pub fn setup_per_zone_low_memory_reserve(&self) {
         for node_id in self.node_states.for_each_online_node() {
-            let mut node: SpinlockGuard<'_, MemoryNode> = self.node_data[node_id].lock();
+            let node: &mut MemoryNode = self.node_mut(node_id);
             for i in 0..NR_ZONES {
                 let ratio: usize = node.zones[i].zone_type().low_memory_reserve_ratio();
                 let clear: bool = ratio == 0 || !node.zones[i].populated_zone();
@@ -92,7 +97,7 @@ impl PageAllocator {
     pub fn calculate_total_reserve_pages(&self) {
         let mut total_reserve_pages: usize = 0;
         for node_id in self.node_states.for_each_online_node() {
-            let mut node: SpinlockGuard<'_, MemoryNode> = self.node_data[node_id].lock();
+            let node: &mut MemoryNode = self.node_mut(node_id);
             let mut reserve_pages: usize = 0;
             for i in 0..NR_ZONES {
                 if !node.zones[i].populated_zone() {
@@ -123,7 +128,7 @@ impl PageAllocator {
 
     pub fn for_each_zone<F: FnMut(&Zone)>(&self, mut function: F) {
         for node_id in self.node_states.for_each_online_node() {
-            let node: SpinlockGuard<'_, MemoryNode> = self.node_data[node_id].lock();
+            let node: &MemoryNode = self.node(node_id);
             for zone_index in 0..NR_ZONES {
                 function(&node.zones[zone_index]);
             }
@@ -132,7 +137,7 @@ impl PageAllocator {
 
     pub fn for_each_zone_mut<F: FnMut(&mut Zone)>(&self, mut function: F) {
         for node_id in self.node_states.for_each_online_node() {
-            let mut node: SpinlockGuard<'_, MemoryNode> = self.node_data[node_id].lock();
+            let node: &mut MemoryNode = self.node_mut(node_id);
             for zone_index in 0..NR_ZONES {
                 function(&mut node.zones[zone_index]);
             }
@@ -141,7 +146,7 @@ impl PageAllocator {
 
     pub fn for_each_populated_zone<F: FnMut(&Zone)>(&self, mut function: F) {
         for node_id in self.node_states.for_each_online_node() {
-            let node: SpinlockGuard<'_, MemoryNode> = self.node_data[node_id].lock();
+            let node: &MemoryNode = self.node(node_id);
             for zone_index in 0..NR_ZONES {
                 if node.zones[zone_index].populated_zone() {
                     function(&node.zones[zone_index]);
@@ -152,7 +157,7 @@ impl PageAllocator {
 
     pub fn for_each_populated_zone_mut<F: FnMut(&mut Zone)>(&self, mut function: F) {
         for node_id in self.node_states.for_each_online_node() {
-            let mut node: SpinlockGuard<'_, MemoryNode> = self.node_data[node_id].lock();
+            let node: &mut MemoryNode = self.node_mut(node_id);
             for zone_index in 0..NR_ZONES {
                 if node.zones[zone_index].populated_zone() {
                     function(&mut node.zones[zone_index]);
@@ -176,7 +181,7 @@ impl PageAllocator {
         };
         let mut entries: [ZoneRef; MAX_ZONELIST_ENTRIES] = [ZoneRef::new(0, ZoneType::Device); MAX_ZONELIST_ENTRIES];
         let entry_count: usize = {
-            let node: SpinlockGuard<'_, MemoryNode> = self.node_data[node_id].lock();
+            let node: &MemoryNode = self.node(node_id);
             let zonelist_entries: &[ZoneRef] = node.alloc_order[0].entries();
             let len: usize = zonelist_entries.len();
             entries[..len].copy_from_slice(zonelist_entries);
@@ -189,8 +194,8 @@ impl PageAllocator {
             }
             let slot: usize = entry.node_id();
             if self.node_states.node_is_set(slot, NodeState::Online) {
-                if let Some(addr) = self.node_data[slot].lock().zones[entry.zone() as usize]
-                    .buddy
+                if let Some(addr) = self.node(slot).zones[entry.zone() as usize]
+                    .buddy.lock()
                     .alloc(size, 0)
                 {
                     return Some(addr);
@@ -220,11 +225,11 @@ impl PageAllocator {
     pub fn free(&self, address: PhysicalAddress, size: usize) {
         let page_frame_number: usize = address.to_page_frame_number();
         let frame: &Frame = unsafe { &*MEMORY_SECTION.page_frame_number_to_page(page_frame_number) };
-        let slot: usize = frame.node;
+        let slot: usize = frame.get_node();
         let zone_type: ZoneType = frame.zone;
         if self.node_states.node_is_set(slot, NodeState::Online) {
-            self.node_data[slot].lock().zones[zone_type as usize]
-                .buddy
+            self.node(slot).zones[zone_type as usize]
+                .buddy.lock()
                 .free(address, size);
         }
     }
