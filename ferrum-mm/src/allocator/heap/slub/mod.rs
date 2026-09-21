@@ -3,7 +3,7 @@ pub mod free_object;
 use alloc::boxed::Box;
 use core::ptr::NonNull;
 
-use crate::allocator::physical::zone::allocator::ZONE_ALLOCATOR;
+use crate::allocator::physical::page_allocator::allocator::PAGE_ALLOCATOR;
 use crate::arch::{PAGE_MASK, PAGE_SIZE};
 use crate::page::frame::Frame;
 use crate::page::frame_usage::FrameUsage;
@@ -50,7 +50,7 @@ impl SlubCache {
         let mut partial: ferrum_core::spinlock::SpinlockGuard<List<Frame>> = self.partial.lock();
 
         if partial.is_empty() {
-            let physical_address = ZONE_ALLOCATOR.alloc_page()?;
+            let physical_address = PAGE_ALLOCATOR.alloc_page()?;
             let count: usize = PAGE_SIZE / self.object_size;
             let base: usize = physical_address.to_virtual().as_usize();
             let frame: &mut Frame = unsafe { &mut *physical_address.to_virtual().to_page() };
@@ -92,7 +92,7 @@ impl SlubCache {
                 unsafe { partial.remove(NonNull::from(frame)) };
             }
             let page_base: usize = ptr.as_ptr() as usize & PAGE_MASK;
-            ZONE_ALLOCATOR.free_page(VirtualAddress::new(page_base).to_physical());
+            PAGE_ALLOCATOR.free_page(VirtualAddress::new(page_base).to_physical());
         } else if was_full {
             self.partial.lock().push_front(NonNull::from(frame));
         }
