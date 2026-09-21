@@ -1,7 +1,7 @@
 #[derive(Clone, Copy)]
 #[repr(usize)]
 pub enum Watermark {
-    Min,
+    Minimum,
     Low,
     High,
     Promo,

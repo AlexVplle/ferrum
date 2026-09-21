@@ -1,38 +1,81 @@
+pub mod numa_event_item;
 pub mod zone_stat_item;
 
-use super::constants::NR_ZONES;
+use super::constants::{NR_ZONES, WATERMARK_BOOST_FACTOR};
 use super::watermark::{NR_WATERMARKS, Watermark};
 use super::zone_type::ZoneType;
+use super::per_cpu_pages::PerCpuPages;
+use super::per_cpu_zonestat::PerCpuZoneStat;
 use super::super::buddy::BuddyAllocator;
+use super::super::buddy::constants::PAGEBLOCK_NR_PAGES;
 use core::sync::atomic::{AtomicUsize, Ordering};
+use ferrum_core::constants::MAX_CPUS;
+use ferrum_core::per_cpu::PerCpu;
+use ferrum_core::spinlock::{Spinlock, SpinlockGuard};
+use lock_dependency::LockClassKey;
+use numa_event_item::{NR_NUMA_EVENT_ITEMS, NumaEventItem};
 use zone_stat_item::{NR_VIRTUAL_MEMORY_ZONE_STAT_ITEMS, ZoneStatItem};
 
+static ZONE_BUDDY_KEY: LockClassKey = LockClassKey::new();
+
 pub struct Zone {
-    pub buddy: BuddyAllocator,
+    pub buddy: Spinlock<BuddyAllocator>,
     zone_type: ZoneType,
+    node_id: usize,
+    start_page_frame_number: usize,
     present_pages: usize,
     managed_pages: usize,
+    pub contiguous: bool,
     watermarks: [usize; NR_WATERMARKS],
+    watermark_boost: usize,
+    nr_reserved_highatomic: usize,
     virtual_memory_stat: [AtomicUsize; NR_VIRTUAL_MEMORY_ZONE_STAT_ITEMS],
+    numa_event: [AtomicUsize; NR_NUMA_EVENT_ITEMS],
     pub(super) low_memory_reserve: [usize; NR_ZONES],
+    pub pageset: PerCpu<PerCpuPages, MAX_CPUS>,
+    pub pageset_high: usize,
+    pub pageset_batch: usize,
+    pub per_cpu_zonestats: PerCpu<PerCpuZoneStat, MAX_CPUS>,
 }
 
 impl Zone {
     pub const fn empty() -> Self {
         const ZERO: AtomicUsize = AtomicUsize::new(0);
         Self {
-            buddy: BuddyAllocator::empty(),
+            buddy: Spinlock::new_tracked(BuddyAllocator::empty(), &ZONE_BUDDY_KEY, "zone_buddy"),
             zone_type: ZoneType::Normal,
+            node_id: 0,
+            start_page_frame_number: 0,
             present_pages: 0,
             managed_pages: 0,
+            contiguous: false,
             watermarks: [0; NR_WATERMARKS],
+            watermark_boost: 0,
+            nr_reserved_highatomic: 0,
             virtual_memory_stat: [ZERO; NR_VIRTUAL_MEMORY_ZONE_STAT_ITEMS],
+            numa_event: [ZERO; NR_NUMA_EVENT_ITEMS],
             low_memory_reserve: [0; NR_ZONES],
+            pageset: PerCpu::new(),
+            pageset_high: 0,
+            pageset_batch: 1,
+            per_cpu_zonestats: PerCpu::new(),
         }
+    }
+
+    pub fn lock_buddy(&self) -> SpinlockGuard<'_, BuddyAllocator> {
+        self.buddy.lock()
     }
 
     pub fn zone_type(&self) -> ZoneType {
         self.zone_type
+    }
+
+    pub fn node_id(&self) -> usize {
+        self.node_id
+    }
+
+    pub fn start_page_frame_number(&self) -> usize {
+        self.start_page_frame_number
     }
 
     pub fn present_pages(&self) -> usize {
@@ -44,19 +87,66 @@ impl Zone {
     }
 
     pub fn watermark(&self, watermark: Watermark) -> usize {
-        self.watermarks[watermark as usize]
+        self.watermarks[watermark as usize] + self.watermark_boost
     }
 
     pub fn set_watermark(&mut self, watermark: Watermark, value: usize) {
         self.watermarks[watermark as usize] = value;
     }
 
+    pub fn minimum_watermark_pages(&self) -> usize {
+        self.watermark(Watermark::Minimum)
+    }
+
+    pub fn low_watermark_pages(&self) -> usize {
+        self.watermark(Watermark::Low)
+    }
+
     pub fn high_watermark_pages(&self) -> usize {
         self.watermarks[Watermark::High as usize]
     }
 
+    pub fn watermark_boost(&self) -> usize {
+        self.watermark_boost
+    }
+
+    pub fn set_watermark_boost(&mut self, value: usize) {
+        self.watermark_boost = value;
+    }
+
+    pub fn boost_watermark(&mut self) -> bool {
+        if WATERMARK_BOOST_FACTOR == 0 {
+            return false;
+        }
+        if (PAGEBLOCK_NR_PAGES * 4) > self.managed_pages {
+            return false;
+        }
+        let max_boost: usize = ((self.watermarks[Watermark::High as usize] as u128
+            * WATERMARK_BOOST_FACTOR as u128
+            / 10000) as usize)
+            .max(PAGEBLOCK_NR_PAGES);
+        self.watermark_boost = (self.watermark_boost + PAGEBLOCK_NR_PAGES).min(max_boost);
+        true
+    }
+
+    pub fn nr_reserved_highatomic(&self) -> usize {
+        self.nr_reserved_highatomic
+    }
+
+    pub fn set_nr_reserved_highatomic(&mut self, value: usize) {
+        self.nr_reserved_highatomic = value;
+    }
+
     pub fn zone_page_state(&self, item: ZoneStatItem) -> usize {
         self.virtual_memory_stat[item as usize].load(Ordering::Relaxed)
+    }
+
+    pub fn numa_event(&self, item: NumaEventItem) -> usize {
+        self.numa_event[item as usize].load(Ordering::Relaxed)
+    }
+
+    pub fn increase_numa_event(&self, item: NumaEventItem) {
+        self.numa_event[item as usize].fetch_add(1, Ordering::Relaxed);
     }
 
     pub fn mod_zone_page_state(&self, item: ZoneStatItem, delta: isize) {
@@ -80,10 +170,12 @@ impl Zone {
         self.present_pages > 0
     }
 
-    pub fn init(&mut self, zone_type: ZoneType, base: crate::physical_address::PhysicalAddress, num_pages: usize) {
+    pub fn init(&mut self, zone_type: ZoneType, node_id: usize, base: crate::physical_address::PhysicalAddress, num_pages: usize) {
         self.zone_type = zone_type;
+        self.node_id = node_id;
+        self.start_page_frame_number = base.to_page_frame_number();
         self.present_pages += num_pages;
-        self.buddy.init(base, num_pages);
+        self.buddy.lock().init(base, num_pages);
         self.adjust_managed_page_count(num_pages as isize);
         self.mod_zone_page_state(ZoneStatItem::FreePages, num_pages as isize);
     }
