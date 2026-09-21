@@ -48,6 +48,7 @@ Like every good thing that exists, it must run Doom.
 - [ ] Memory compaction
 - [ ] Contiguous Memory Allocator
 - [ ] Huge pages
+- [ ] Transparent Huge Pages
 - [ ] ZONE_MOVABLE
 - [ ] Memory policy
 - [ ] Virtual memory areas (mm_struct + VMA)
@@ -56,6 +57,9 @@ Like every good thing that exists, it must run Doom.
 - [ ] Page fault handler
 - [ ] Guard pages
 - [ ] KASAN
+
+### sysctl
+- [ ] sysctl
 
 ### Kernel infrastructure
 - [x] Intrusive doubly-linked list with iterator traits (2026-07-25)
@@ -90,6 +94,7 @@ Like every good thing that exists, it must run Doom.
 - [ ] Userspace
 - [ ] VFS server
 - [ ] Driver model
+- [ ] control_groups
 - [ ] Doom
 
 ## Maybe
