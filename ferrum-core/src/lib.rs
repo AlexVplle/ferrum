@@ -1,6 +1,7 @@
 #![cfg_attr(not(any(test, feature = "fuzz")), no_std)]
 
 pub mod arch;
+pub mod constants;
 pub mod thread_info;
 pub mod atomic_bitmask;
 pub mod bitmask_iter;
