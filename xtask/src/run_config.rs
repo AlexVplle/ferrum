@@ -1,6 +1,8 @@
+use crate::arch::Arch;
 use crate::{parse_optional_str_arg, parse_repeated_str_arg};
 
 pub struct RunConfig {
+    pub arch: Arch,
     pub memory: Option<String>,
     pub window: bool,
     pub gdb: bool,
@@ -13,6 +15,7 @@ pub struct RunConfig {
 impl RunConfig {
     pub fn from_args(args: &[String]) -> Self {
         Self {
+            arch: Arch::from_args(args),
             memory: parse_optional_str_arg(args, "--memory"),
             window: args.contains(&"--window".to_string()),
             gdb: args.contains(&"--gdb".to_string()),

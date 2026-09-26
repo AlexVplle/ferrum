@@ -1,14 +1,15 @@
 use std::process::Command;
 
+mod arch;
 mod run_config;
+use arch::Arch;
 use run_config::RunConfig;
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         Some("build") => {
-            let debug: bool = args.contains(&"--debug".to_string());
-            build(debug);
+            build(&Arch::from_args(&args), args.contains(&"--debug".to_string()));
         }
         Some("run") => {
             run(RunConfig::from_args(&args));
@@ -18,7 +19,7 @@ fn main() {
             let loom: bool = args.contains(&"--loom".to_string());
             test(miri, loom);
         }
-        _ => eprintln!("Usage: cargo xtask [build [--debug]|run [--memory <size>] [--window] [--gdb] [--debug] [--numa <n>] [--smp <n>] [--distance src,dst,value]...|test [--miri|--loom]]"),
+        _ => eprintln!("Usage: cargo xtask [build [--arch <arch>] [--debug]|run [--arch <arch>] [--memory <size>] [--window] [--gdb] [--debug] [--numa <n>] [--smp <n>] [--distance src,dst,value]...|test [--miri|--loom]]"),
     }
 }
 
@@ -71,17 +72,19 @@ pub fn parse_optional_str_arg(args: &[String], flag: &str) -> Option<String> {
     Some(args.get(position + 1).unwrap_or_else(|| panic!("missing value for {flag}")).clone())
 }
 
-fn build(debug: bool) {
-    let linker_script: std::path::PathBuf = workspace_root().join("ferrum/linker.lds");
+fn build(arch: &Arch, debug: bool) {
+    let root: std::path::PathBuf = workspace_root();
+    let linker_script: std::path::PathBuf = root.join(arch.linker_script());
     let rustflags: String = format!("-C link-arg=-T{} -C link-arg=-pie", linker_script.display());
 
+    let target_json: String = arch.target_json();
     let mut cargo_args: Vec<&str> = vec![
         "+nightly",
         "build",
         "--package",
         "ferrum",
         "--target",
-        "ferrum/riscv64-ferrum.json",
+        &target_json,
         "-Z",
         "build-std=core,alloc,compiler_builtins",
         "-Z",
@@ -97,7 +100,7 @@ fn build(debug: bool) {
     let status: std::process::ExitStatus = Command::new("cargo")
         .args(&cargo_args)
         .env("RUSTFLAGS", rustflags)
-        .current_dir(workspace_root())
+        .current_dir(root)
         .status()
         .expect("failed to run cargo build");
 
@@ -107,11 +110,12 @@ fn build(debug: bool) {
 }
 
 fn run(config: RunConfig) {
-    build(config.debug);
+    build(&config.arch, config.debug);
 
     let profile: &str = if config.debug { "debug" } else { "release" };
+    let target_dir: String = config.arch.target_dir();
     let kernel: std::path::PathBuf = workspace_root()
-        .join(format!("target/riscv64-ferrum/{profile}/ferrum"));
+        .join(format!("target/{target_dir}/{profile}/ferrum"));
 
     let display_args: &[&str] = if config.window {
         &["-serial", "vc:640x480", "-display", "cocoa,zoom-to-fit=on", "-monitor", "none"]
@@ -120,21 +124,21 @@ fn run(config: RunConfig) {
     };
 
     let gdb_args: &[&str] = if config.gdb {
-        let elf: &str = if config.debug {
-            "target/riscv64-ferrum/debug/ferrum"
+        let elf: String = if config.debug {
+            format!("target/{target_dir}/debug/ferrum")
         } else {
-            "target/riscv64-ferrum/release/ferrum"
+            format!("target/{target_dir}/release/ferrum")
         };
         eprintln!("GDB stub listening on port 1234 - connect with:");
-        eprintln!("  riscv64-unknown-elf-gdb {elf}");
+        eprintln!("  {} {elf}", config.arch.gdb_prefix());
         eprintln!("  (gdb) target remote :1234");
         &["-s", "-S"]
     } else {
         &[]
     };
 
-    let mut cmd: Command = Command::new("qemu-system-riscv64");
-    cmd.args(["-machine", "virt", "-kernel", kernel.to_str().unwrap()]);
+    let mut cmd: Command = Command::new(config.arch.qemu_binary());
+    cmd.args(["-machine", config.arch.qemu_machine(), "-kernel", kernel.to_str().unwrap()]);
 
     if let Some(numa) = config.numa {
         let node_mem: &str = config.memory.as_deref().unwrap_or("128M");
@@ -172,7 +176,7 @@ fn run(config: RunConfig) {
 
     cmd.args(display_args).args(gdb_args);
 
-    let status: std::process::ExitStatus = cmd.status().expect("failed to run qemu-system-riscv64");
+    let status: std::process::ExitStatus = cmd.status().expect("failed to run qemu");
     std::process::exit(status.code().unwrap_or(1));
 }
 
