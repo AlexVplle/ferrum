@@ -1,4 +1,4 @@
-use crate::arch::riscv64::csr::Scause;
+use crate::arch::riscv::csr::Scause;
 use super::exception::Exception;
 use super::interrupt::Interrupt;
 

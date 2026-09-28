@@ -146,7 +146,7 @@ _exit_user:
     sstatus_frame_slot = const frame::SSTATUS_FRAME_SLOT,
     float_regs_frame_slot = const frame::FLOAT_REGS_FRAME_SLOT,
     fcsr_frame_slot = const frame::FCSR_FRAME_SLOT,
-    sstatus_spp_bit = const crate::arch::riscv64::csr::sstatus::SUPERVISOR_PREVIOUS_PRIVILEGE_BIT,
+    sstatus_spp_bit = const crate::arch::riscv::csr::sstatus::SUPERVISOR_PREVIOUS_PRIVILEGE_BIT,
 );
 
 #[unsafe(no_mangle)]

@@ -1,6 +1,6 @@
 use core::ptr::NonNull;
 
-use crate::arch::riscv64::constants::MAX_HARTS;
+use crate::arch::riscv::constants::MAX_HARTS;
 
 use super::call_single_data::CallSingleData;
 use super::hart_ipi_state::HartInterProcessorInterruptState;

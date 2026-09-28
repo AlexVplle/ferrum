@@ -7,7 +7,7 @@ edition = "2021"
 spinlock = { git = "https://github.com/AlexVplle/spinlock" }
 lock_dependency = { path = "../../lockdep" }
 
-[target.'cfg(target_arch = "riscv64")'.dependencies]
+[target.'cfg(any(target_arch = "riscv64", target_arch = "riscv32"))'.dependencies]
 sbi = { path = "../../sbi" }
 
 [features]

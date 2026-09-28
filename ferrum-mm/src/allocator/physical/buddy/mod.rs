@@ -15,7 +15,7 @@ use crate::page::{
 };
 use crate::physical_address::PhysicalAddress;
 use crate::virtual_address::VirtualAddress;
-use constants::MIGRATE_FALLBACK;
+use constants::{MIGRATE_FALLBACK, PAGEBLOCK_NR_PAGES};
 use core::ptr::NonNull;
 use free_area::FreeArea;
 use free_block::FreeBlock;
@@ -128,13 +128,13 @@ impl BuddyAllocator {
         if order > MAX_PAGE_ORDER {
             return None;
         }
-        if let Some(pfn) = self.alloc_from_list(order, migrate_type) {
-            return Some(pfn);
+        if let Some(page_frame_number) = self.alloc_from_list(order, migrate_type) {
+            return Some(page_frame_number);
         }
         if (migrate_type as usize) < NR_MOVABLE_MIGRATE_TYPES {
             for fallback in MIGRATE_FALLBACK[migrate_type as usize] {
-                if let Some(pfn) = self.alloc_from_list(order, fallback) {
-                    return Some(pfn);
+                if let Some(page_frame_number) = self.alloc_from_list(order, fallback) {
+                    return Some(page_frame_number);
                 }
             }
         }
@@ -148,7 +148,7 @@ impl BuddyAllocator {
     fn free_order(&mut self, page_frame_number: usize, order: usize) {
         debug_assert!(MEMORY_SECTION.page_frame_number_valid(page_frame_number));
         let migrate_type: MigrateType = MEMORY_SECTION.get_pageblock_migratetype(page_frame_number);
-        if order >= MAX_PAGE_ORDER {
+        if order == MAX_PAGE_ORDER {
             self.push_block(page_frame_number, order, migrate_type);
             return;
         }

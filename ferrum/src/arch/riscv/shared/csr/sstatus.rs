@@ -2,7 +2,7 @@ use ferrum_macros::flag;
 
 pub const SUPERVISOR_PREVIOUS_PRIVILEGE_BIT: usize = 1 << 8;
 
-csr!(Sstatus, 0x8000_0000_000d_e762, 0x100);
+csr!(Sstatus, crate::arch::SSTATUS_WRITE_MASK, 0x100);
 
 impl Sstatus {
     flag!(supervisor_interrupt_enable, 1);

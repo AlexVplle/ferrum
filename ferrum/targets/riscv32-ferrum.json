@@ -12,8 +12,8 @@
   "panic-strategy": "abort",
   "relocation-model": "pic",
   "code-model": "small",
-  "features": "+m,+a,+f,+d,+c",
-  "llvm-abiname": "ilp32d",
+  "features": "+m,+a,+c",
+  "llvm-abiname": "ilp32",
   "pre-link-args": {
     "ld.lld": [
       "--no-undefined"

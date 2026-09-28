@@ -1,4 +1,4 @@
-use crate::arch::riscv64::csr::{Scause, Sepc, Sstatus, Stval};
+use crate::arch::riscv::csr::{Scause, Sepc, Sstatus, Stval};
 
 pub const TRAP_FRAME_SIZE: usize = core::mem::size_of::<TrapFrame>();
 pub const SEPC_FRAME_SLOT: usize = core::mem::offset_of!(TrapFrame, sepc) / core::mem::size_of::<usize>();
