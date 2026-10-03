@@ -1,5 +1,5 @@
 #[repr(usize)]
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum PagingMode {
     Sv39 = 8,
     Sv48 = 9,

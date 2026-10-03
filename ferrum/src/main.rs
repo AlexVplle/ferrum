@@ -30,6 +30,7 @@ unsafe extern "C" {
 
 pub fn kernel_main() -> ! {
     splash::print();
+    ferrum_core::printkln!("[paging] mode={:?}", ferrum_mm::arch::paging_mode());
     ferrum_core::printkln!(
         "[smp] cpu_online_mask={:#b}",
         crate::smp::CPU_STATES.get_mask(crate::smp::CpuState::Online as usize)
