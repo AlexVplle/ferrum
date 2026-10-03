@@ -12,7 +12,7 @@
   "panic-strategy": "abort",
   "relocation-model": "pic",
   "code-model": "medium",
-  "features": "+m,+a,+f,+d,+c",
+  "features": "+m,+a,+zaamo,+zalrsc,+f,+d,+c",
   "llvm-abiname": "lp64d",
   "pre-link-args": {
     "ld.lld": [

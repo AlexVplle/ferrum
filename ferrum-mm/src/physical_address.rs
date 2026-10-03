@@ -22,8 +22,5 @@ impl PhysicalAddress {
         Self::new(self.0 & crate::arch::PAGE_MASK)
     }
 
-    pub const fn giga_page_base(self) -> Self {
-        Self::new(self.0 & crate::arch::GIGA_PAGE_MASK)
-    }
 
 }

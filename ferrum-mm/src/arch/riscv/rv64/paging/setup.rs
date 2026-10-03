@@ -6,7 +6,7 @@ use super::page_table_entry::PageTableEntry;
 use super::page_table_entry_flags::PageTableEntryFlags;
 use super::satp::Satp;
 use super::tlb::flush_tlb_all;
-use crate::arch::{GIGA_PAGE_SIZE, PAGE_TABLE_LEVEL2_SHIFT, VIRTUAL_PAGE_NUMBER_MASK};
+use crate::arch::{GIGA_PAGE_MASK, GIGA_PAGE_SIZE, PAGE_TABLE_LEVEL2_SHIFT, VIRTUAL_PAGE_NUMBER_MASK};
 use crate::memory_block::{MemoryBlockRegion, MEMORY_BLOCK};
 use crate::physical_address::PhysicalAddress;
 use crate::virtual_address::VirtualAddress;
@@ -33,9 +33,9 @@ pub fn setup_direct_map() {
         .dirty();
 
     for region in regions {
-        let start: PhysicalAddress = region.base.giga_page_base();
+        let start: PhysicalAddress = PhysicalAddress::new(region.base.as_usize() & GIGA_PAGE_MASK);
         let end: PhysicalAddress =
-            (region.base + region.size + GIGA_PAGE_SIZE - 1).giga_page_base();
+            PhysicalAddress::new((region.base.as_usize() + region.size + GIGA_PAGE_SIZE - 1) & GIGA_PAGE_MASK);
 
         let mut gigapage_physical_address: PhysicalAddress = start;
         while gigapage_physical_address.as_usize() < end.as_usize() {

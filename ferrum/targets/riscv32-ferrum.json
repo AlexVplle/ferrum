@@ -12,7 +12,7 @@
   "panic-strategy": "abort",
   "relocation-model": "pic",
   "code-model": "small",
-  "features": "+m,+a,+c",
+  "features": "+m,+a,+zaamo,+zalrsc,+c",
   "llvm-abiname": "ilp32",
   "pre-link-args": {
     "ld.lld": [

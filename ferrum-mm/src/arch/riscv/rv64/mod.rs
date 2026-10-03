@@ -10,6 +10,7 @@ pub const KERNEL_VIRTUAL_BASE: usize = 0xffffffff80200000;
 pub const PAGE_TABLE_LEVEL1_SHIFT: usize = 21;
 pub const PAGE_TABLE_LEVEL2_SHIFT: usize = 30;
 pub const GIGA_PAGE_SIZE: usize = 1 << PAGE_TABLE_LEVEL2_SHIFT;
+pub const GIGA_PAGE_MASK: usize = !(GIGA_PAGE_SIZE - 1);
 pub const PHYSICAL_PAGE_NUMBER_MASK: usize = 0x003FFFFFFFFFFC00;
 pub const VIRTUAL_PAGE_NUMBER_MASK: usize = 0x1FF;
 

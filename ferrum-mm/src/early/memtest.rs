@@ -55,7 +55,7 @@ pub fn early_memtest(memory_block: &mut MemoryBlock) {
 }
 
 fn test_page(page: PhysicalAddress) -> bool {
-    let ptr: *mut usize = page.to_kernel_virtual().as_usize() as *mut usize;
+    let ptr: *mut usize = page.to_virtual().as_usize() as *mut usize;
     let count: usize = PAGE_SIZE / core::mem::size_of::<usize>();
 
     for &pattern in PATTERNS.iter() {
