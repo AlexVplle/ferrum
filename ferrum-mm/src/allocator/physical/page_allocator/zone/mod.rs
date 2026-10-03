@@ -1,13 +1,15 @@
 pub mod numa_event_item;
 pub mod zone_stat_item;
 
+use super::alloc_flags::AllocFlags;
 use super::constants::{NR_ZONES, WATERMARK_BOOST_FACTOR};
 use super::watermark::{NR_WATERMARKS, Watermark};
 use super::zone_type::ZoneType;
 use super::per_cpu_pages::PerCpuPages;
 use super::per_cpu_zonestat::PerCpuZoneStat;
-use super::super::buddy::BuddyAllocator;
+use super::super::buddy::{BuddyAllocator, MAX_PAGE_ORDER};
 use super::super::buddy::constants::PAGEBLOCK_NR_PAGES;
+use crate::migrate_type::MigrateType;
 use core::sync::atomic::{AtomicUsize, Ordering};
 use ferrum_core::constants::MAX_CPUS;
 use ferrum_core::per_cpu::PerCpu;
@@ -164,6 +166,50 @@ impl Zone {
 
     pub fn low_memory_reserve(&self, zone_index: usize) -> usize {
         self.low_memory_reserve[zone_index]
+    }
+
+    pub fn zone_watermark_ok(
+        &self,
+        order: usize,
+        mark: usize,
+        highest_zoneidx: usize,
+        alloc_flags: AllocFlags,
+        free_pages: usize,
+    ) -> bool {
+        let alloc_harder: bool = alloc_flags.contains(AllocFlags::HARDER)
+            || alloc_flags.contains(AllocFlags::OUT_OF_MEMORY);
+
+        let mut free_pages: isize = free_pages as isize - ((1usize << order) - 1) as isize;
+        let mut min: isize = mark as isize;
+
+        if alloc_flags.contains(AllocFlags::HIGH) {
+            min -= min / 2;
+        }
+
+        if !alloc_harder {
+            free_pages -= self.nr_reserved_highatomic as isize;
+        } else if alloc_flags.contains(AllocFlags::OUT_OF_MEMORY) {
+            min -= min / 2;
+        } else {
+            min -= min / 4;
+        }
+
+        if free_pages <= min + self.low_memory_reserve[highest_zoneidx] as isize {
+            return false;
+        }
+
+        let buddy: ferrum_core::spinlock::SpinlockGuard<'_, BuddyAllocator> = self.buddy.lock();
+        for o in order..=MAX_PAGE_ORDER {
+            for migrate_type in [MigrateType::Unmovable, MigrateType::Movable, MigrateType::Reclaimable] {
+                if !buddy.is_area_empty(o, migrate_type) {
+                    return true;
+                }
+            }
+            if alloc_harder && !buddy.is_area_empty(o, MigrateType::HighAtomic) {
+                return true;
+            }
+        }
+        false
     }
 
     pub fn populated_zone(&self) -> bool {

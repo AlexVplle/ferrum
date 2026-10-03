@@ -40,6 +40,10 @@ impl BuddyAllocator {
         self.total_pages
     }
 
+    pub fn is_area_empty(&self, order: usize, migrate_type: MigrateType) -> bool {
+        self.areas[order].is_empty(migrate_type)
+    }
+
     pub fn init(&mut self, base: PhysicalAddress, total_pages: usize) {
         self.base_page_frame_number = base.to_page_frame_number();
         self.total_pages = total_pages;
