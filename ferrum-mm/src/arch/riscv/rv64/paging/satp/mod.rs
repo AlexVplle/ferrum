@@ -1,5 +1,5 @@
 mod constants;
-use constants::{CSR_ADDRESS, MODE_MASK, MODE_SV39, PPN_MASK};
+use constants::{CSR_ADDRESS, MODE_MASK, MODE_SHIFT, MODE_SV39, MODE_SV48, MODE_SV57, PPN_MASK};
 use crate::arch::PAGE_SHIFT;
 
 #[repr(C)]
@@ -8,6 +8,10 @@ pub struct Satp(usize);
 
 impl Satp {
     pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub const fn bare() -> Self {
         Self(0)
     }
 
@@ -21,8 +25,28 @@ impl Satp {
         }
     }
 
+    pub fn read() -> Self {
+        let bits: usize;
+        unsafe {
+            core::arch::asm!("csrr {0}, {csr}", out(reg) bits, csr = const CSR_ADDRESS, options(nostack, nomem));
+        }
+        Self(bits)
+    }
+
+    pub fn mode(self) -> usize {
+        (self.0 & MODE_MASK) >> MODE_SHIFT
+    }
+
     pub const fn set_sv39(self) -> Self {
         Self::from_bits((self.0 & !MODE_MASK) | MODE_SV39)
+    }
+
+    pub const fn set_sv48(self) -> Self {
+        Self::from_bits((self.0 & !MODE_MASK) | MODE_SV48)
+    }
+
+    pub const fn set_sv57(self) -> Self {
+        Self::from_bits((self.0 & !MODE_MASK) | MODE_SV57)
     }
 
     pub const fn with_root_physical_address(self, address: usize) -> Self {

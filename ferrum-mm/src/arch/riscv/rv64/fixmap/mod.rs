@@ -1,6 +1,6 @@
 mod constants;
 
-use super::paging::early_paging::EARLY_PAGE_DIRECTORY;
+use super::paging::early_paging::early_level2_table;
 use super::paging::page_table::PageTable;
 use super::paging::page_table_entry::PageTableEntry;
 use super::paging::page_table_entry_flags::PageTableEntryFlags;
@@ -25,9 +25,8 @@ pub fn init() {
     };
     let l1_physical: PhysicalAddress =
         VirtualAddress::new(&raw const FIXMAP_LEVEL1_TABLE as usize).to_kernel_physical();
-    unsafe {
-        EARLY_PAGE_DIRECTORY[FIXMAP_LEVEL2_INDEX] = PageTableEntry::new(l1_physical, non_leaf)
-    };
+    let level2_table: &mut PageTable = unsafe { early_level2_table() };
+    level2_table[FIXMAP_LEVEL2_INDEX] = PageTableEntry::new(l1_physical, non_leaf);
 }
 
 pub fn map_fdt(physical_address: PhysicalAddress) {

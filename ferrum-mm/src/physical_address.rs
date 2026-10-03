@@ -7,11 +7,11 @@ pub struct PhysicalAddress(usize);
 
 impl PhysicalAddress {
     pub fn to_virtual(self) -> VirtualAddress {
-        VirtualAddress::new(self.0.wrapping_add(crate::arch::PAGE_OFFSET))
+        VirtualAddress::new(self.0.wrapping_add(crate::arch::page_offset()))
     }
 
     pub fn to_kernel_virtual(self) -> VirtualAddress {
-        VirtualAddress::new(self.0.wrapping_add(crate::arch::PHYSICAL_TO_VIRTUAL_OFFSET))
+        VirtualAddress::new(self.0.wrapping_add(crate::arch::physical_to_virtual_offset()))
     }
 
     pub const fn to_page_frame_number(self) -> usize {

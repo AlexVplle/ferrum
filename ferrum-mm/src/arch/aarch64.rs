@@ -5,5 +5,8 @@ pub const GIGA_PAGE_SIZE: usize = 1 << 30;
 pub const GIGA_PAGE_MASK: usize = !(GIGA_PAGE_SIZE - 1);
 pub const PAGE_OFFSET: usize = 0xFFFF000000000000;
 pub const PHYSICAL_TO_VIRTUAL_OFFSET: usize = PAGE_OFFSET;
+
+pub fn page_offset() -> usize { PAGE_OFFSET }
+pub fn physical_to_virtual_offset() -> usize { PHYSICAL_TO_VIRTUAL_OFFSET }
 pub const SECTION_SIZE_BITS: usize = 30;
 pub const MAX_PHYSMEM_BITS: usize = 48;

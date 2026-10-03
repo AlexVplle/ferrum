@@ -8,11 +8,11 @@ pub struct VirtualAddress(usize);
 
 impl VirtualAddress {
     pub fn to_physical(self) -> PhysicalAddress {
-        PhysicalAddress::new(self.0.wrapping_sub(crate::arch::PAGE_OFFSET))
+        PhysicalAddress::new(self.0.wrapping_sub(crate::arch::page_offset()))
     }
 
     pub fn to_kernel_physical(self) -> PhysicalAddress {
-        PhysicalAddress::new(self.0.wrapping_sub(crate::arch::PHYSICAL_TO_VIRTUAL_OFFSET))
+        PhysicalAddress::new(self.0.wrapping_sub(crate::arch::physical_to_virtual_offset()))
     }
 
     pub fn to_page_frame_number(self) -> usize {

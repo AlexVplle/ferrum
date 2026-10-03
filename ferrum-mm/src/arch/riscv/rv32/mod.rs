@@ -4,6 +4,10 @@ pub use common::*;
 
 pub const PAGE_TABLE_ENTRIES: usize = 1024;
 pub const PAGE_OFFSET: usize = 0xC0000000;
+
+pub fn page_offset() -> usize { PAGE_OFFSET }
+pub fn kernel_virtual_base() -> usize { KERNEL_VIRTUAL_BASE }
+pub fn physical_to_virtual_offset() -> usize { PHYSICAL_TO_VIRTUAL_OFFSET }
 pub const SECTION_SIZE_BITS: usize = 22;
 pub const MAX_PHYSMEM_BITS: usize = 34;
 pub const KERNEL_VIRTUAL_BASE: usize = 0xC0200000;
