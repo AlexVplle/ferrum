@@ -10,6 +10,11 @@ pub const NR_PER_CPU_PAGES_LISTS: usize =
     crate::migrate_type::NR_MOVABLE_MIGRATE_TYPES
     * (PAGE_ALLOC_COSTLY_ORDER + 1 + NR_PCP_TRANSPARENT_HUGE_PAGES);
 
+pub const WATERMARK_SCALE_FACTOR: usize = 10;
+pub const MIN_FREE_KBYTES_MIN: usize = 128;
+pub const MIN_FREE_KBYTES_MAX: usize = 262144;
+pub const USER_MIN_FREE_KBYTES: usize = 0;
+
 pub const LOW_MEMORY_RESERVE_RATIO_DIRECT_MEMORY_ACCESS: usize = 256;
 pub const LOW_MEMORY_RESERVE_RATIO_NORMAL: usize = 32;
 pub const LOW_MEMORY_RESERVE_RATIO_MOVABLE: usize = 0;

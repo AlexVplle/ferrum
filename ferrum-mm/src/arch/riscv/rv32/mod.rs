@@ -17,6 +17,13 @@ pub const MEGA_PAGE_MASK: usize = !(MEGA_PAGE_SIZE - 1);
 pub const PHYSICAL_PAGE_NUMBER_MASK: usize = 0xFFFFFC00;
 pub const VIRTUAL_PAGE_NUMBER_MASK: usize = 0x3FF;
 
+pub mod paging_mode;
+pub use paging_mode::PagingMode;
+
+pub fn paging_mode() -> PagingMode {
+    PagingMode::Sv32
+}
+
 pub mod fixmap;
 #[path = "../shared/numa.rs"]
 pub mod numa;

@@ -1,5 +1,9 @@
 use core::cell::UnsafeCell;
-use super::constants::{MAX_NODES, MAX_ZONELIST_ENTRIES, NR_ZONES};
+use super::constants::{
+    MAX_NODES, MAX_ZONELIST_ENTRIES, MIN_FREE_KBYTES_MAX, MIN_FREE_KBYTES_MIN, NR_ZONES,
+    USER_MIN_FREE_KBYTES, WATERMARK_SCALE_FACTOR,
+};
+use super::watermark::Watermark;
 use super::zone::Zone;
 use super::zone_stat_item::ZoneStatItem;
 use super::memory_node::MemoryNode;
@@ -203,6 +207,53 @@ impl PageAllocator {
             }
         }
         None
+    }
+
+    pub fn init_per_zone_watermark_minimum(&self) {
+        let total_managed_pages: usize = self.total_managed_pages();
+        let low_memory_kilobytes: usize = self.nr_free_buffer_pages() * (PAGE_SIZE >> 10);
+        let new_min_free_kbytes: usize = low_memory_kilobytes.saturating_mul(16).isqrt();
+        let min_free_kbytes: usize = new_min_free_kbytes
+            .max(USER_MIN_FREE_KBYTES)
+            .clamp(MIN_FREE_KBYTES_MIN, MIN_FREE_KBYTES_MAX);
+        let pages_min: usize = min_free_kbytes * 1024 / PAGE_SIZE;
+        self.setup_per_zone_watermarks(pages_min, total_managed_pages);
+        self.setup_per_zone_low_memory_reserve();
+    }
+
+    fn nr_free_buffer_pages(&self) -> usize {
+        let mut total: usize = 0;
+        for node_id in self.node_states.for_each_online_node() {
+            let node: &MemoryNode = self.node(node_id);
+            for zone_index in 0..=ZoneType::Normal as usize {
+                total += node.zones[zone_index].managed_pages();
+            }
+        }
+        total
+    }
+
+    fn total_managed_pages(&self) -> usize {
+        let mut total: usize = 0;
+        self.for_each_populated_zone(|zone: &Zone| {
+            total += zone.managed_pages();
+        });
+        total
+    }
+
+    fn setup_per_zone_watermarks(&self, pages_min: usize, total_managed_pages: usize) {
+        self.for_each_populated_zone_mut(|zone: &mut Zone| {
+            let zone_managed: usize = zone.managed_pages();
+            let min: usize = if total_managed_pages > 0 {
+                pages_min * zone_managed / total_managed_pages
+            } else {
+                0
+            };
+            let low: usize = min + zone_managed * WATERMARK_SCALE_FACTOR / 10000;
+            let high: usize = min + zone_managed * WATERMARK_SCALE_FACTOR * 2 / 10000;
+            zone.set_watermark(Watermark::Minimum, min);
+            zone.set_watermark(Watermark::Low, low);
+            zone.set_watermark(Watermark::High, high);
+        });
     }
 
     fn current_node(&self) -> usize {

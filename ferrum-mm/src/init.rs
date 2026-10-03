@@ -47,4 +47,5 @@ pub fn memory_manager_initialization(kernel_physical_start: PhysicalAddress, ker
     }
 
     PAGE_ALLOCATOR.build_alloc_order();
+    PAGE_ALLOCATOR.init_per_zone_watermark_minimum();
 }
