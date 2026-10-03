@@ -61,6 +61,12 @@ Like every good thing that exists, it must run Doom.
 ### sysctl
 - [ ] sysctl
 
+### Architecture
+- [x] Sv39 paging (2026-06-14)
+- [ ] Sv48 paging
+- [ ] Sv57 paging
+- [x] Sv32 paging (2026-10-03)
+
 ### Kernel infrastructure
 - [x] Intrusive doubly-linked list with iterator traits (2026-07-25)
 - [x] Atomic notifier chain (2026-07-22)
@@ -110,17 +116,19 @@ Like every good thing that exists, it must run Doom.
 ## Build
 
 ```sh
-cargo xtask build [--debug]
+cargo xtask build [--arch <arch>] [--debug]
 ```
 
+- `--arch <arch>` - target architecture: `riscv32` or `riscv64` (default: `riscv64`)
 - `--debug` - build with debug info
 
 ## Run
 
 ```sh
-cargo xtask run [--memory <size>] [--window] [--gdb] [--debug] [--numa <n>] [--smp <n>]
+cargo xtask run [--arch <arch>] [--memory <size>] [--window] [--gdb] [--debug] [--numa <n>] [--smp <n>]
 ```
 
+- `--arch <arch>` - target architecture: `riscv32` or `riscv64` (default: `riscv64`)
 - `--memory <size>` - QEMU RAM size per NUMA node (default: `128M`)
 - `--window` - display output in a window instead of serial console
 - `--gdb` - start GDB stub on port 1234
